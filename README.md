@@ -13,7 +13,7 @@ The application is divided into two main interactive panels:
 This panel focuses on the group-theoretic properties of the genetic code:
 
 *   **Codogram Orbit Visualization:**
-    *   The 24 homogeneous codogram representations of the genetic code are known to be divided into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. This tool displays these 6 orbits.
+    *   It has been established by the program's author that the 24 homogeneous codogram representations of the genetic code are partitioned into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. This tool displays these 6 orbits.
     *   Users can select any of the 6 orbits for detailed inspection.
 *   **Mini-Matrix Display (Codograms):**
     *   For the selected orbit, 4 mini-matrices (4x4 codograms) are displayed, corresponding to the application of the E (identity), R1, R2, and R transformations to the orbit's representative nucleotide order.
@@ -106,8 +106,8 @@ Further analysis by the author of this tool (Ruslan Khafizov, contact: <a href="
 
 ## How to Run Locally
 1.  Download or clone this repository.
-2.  Ensure the main HTML file is named `index.html` (or `103.html`).
-3.  Open the `index.html` (or `103.html`) file in a modern web browser (e.g., Chrome, Firefox, Edge, Safari).
+2.  Ensure the main HTML file is named `index.html`.
+3.  Open the `index.html` file in a modern web browser (e.g., Chrome, Firefox, Edge, Safari).
 
 ## Technologies Used
 *   **React 18** (via CDN)
@@ -122,4 +122,4 @@ Ruslan Khafizov
 *   Contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>
 
 ## License
-[Specify your chosen license here, e.g., MIT License]
+MIT License
