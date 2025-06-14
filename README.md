@@ -62,7 +62,7 @@ This panel provides a detailed, configurable 16x4 matrix representation of the g
     *   Users can click on individual codons (the smallest cells within the 16x4 matrix) to select them.
     *   A running sum of the molecular masses of the selected codons is displayed below the matrix.
     *   The equation shows each selected amino acid (or STOP) and its mass, culminating in the total sum.
-    *   The total sum is highlighted in green if it is divisible by 37 or 111.
+    *   The total sum is highlighted in green if it is divisible by 37.
     *   A "Reset Selection" button clears all selected codons.
 *   **Dynamic Legend:** A comprehensive legend explains the current coloring mode and provides additional relevant information (e.g., the genetic code being analyzed).
 
