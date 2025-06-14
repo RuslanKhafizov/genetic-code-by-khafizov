@@ -1,8 +1,8 @@
-# Interactive Genetic Code Analyzer & Rumer Orbit Explorer
+# Interactive Genetic Code Analyzer
 
-This interactive web tool is designed for visualizing, exploring, and analyzing the structural and mathematical symmetries inherent in the genetic code. Special attention is given to the concepts first proposed by Yuri Borisovich Rumer and their further development, including the analysis of codogram orbits under Rumer's transformation group.
+This interactive web tool is designed for visualizing, exploring, and analyzing structural and mathematical symmetries inherent in the genetic code. It particularly focuses on the concepts related to Rumer's transformations and extends this analysis to the group symmetries formed by codogram orbits.
 
-**Live Demo (GitHub Pages): https://ruslankhafizov.github.io/genetic-code-by-khafizov
+Live Demo (GitHub Pages): https://ruslankhafizov.github.io/genetic-code-by-khafizov
 
 ## Core Features
 
@@ -10,10 +10,10 @@ The application is divided into two main interactive panels:
 
 ### 1. Rumer Orbit Explorer (Left Panel)
 
-This panel focuses on the group-theoretic properties of the genetic code based on Rumer's concepts:
+This panel focuses on the group-theoretic properties of the genetic code:
 
 *   **Codogram Orbit Visualization:**
-    *   Displays all 6 disjoint "orbits" into which the 24 homogeneous codogram representations of the genetic code are divided under the action of the {E, R, R1, R2} transformation group.
+    *   The 24 homogeneous codogram representations of the genetic code are known to be divided into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. This tool displays these 6 orbits.
     *   Users can select any of the 6 orbits for detailed inspection.
 *   **Mini-Matrix Display (Codograms):**
     *   For the selected orbit, 4 mini-matrices (4x4 codograms) are displayed, corresponding to the application of the E (identity), R1, R2, and R transformations to the orbit's representative nucleotide order.
@@ -22,7 +22,7 @@ This panel focuses on the group-theoretic properties of the genetic code based o
         *   **White:** Belongs to Octet II.
     *   **Molecular Mass Display:** Each of the 16 XY-boxes in a mini-matrix displays the sum of atomic weights of the four amino acids it codes for (using the active genetic code). Stop codons are assigned a conventional weight of 74 Da, and unknown codons ('?') a weight of 0 Da.
     *   **Row/Column/Grand Total Masses:** Sums of molecular masses are displayed for each row, each column, and the grand total for each mini-matrix.
-*   **Interactive Rumer Transformations:**
+*   **Interactive Rumer-related Transformations:**
     *   Buttons allow users to apply R (U↔G, C↔A), R1 (U↔G), or R2 (C↔A) transformations to the nucleotide orders of the currently displayed orbit.
     *   This dynamically changes the displayed codograms, allowing observation of how these transformations affect code structure and nucleotide arrangements.
     *   Nucleotides affected by an active transformation are highlighted on the axes and titles of the mini-matrices.
@@ -68,8 +68,6 @@ This panel provides a detailed, configurable 16x4 matrix representation of the g
 
 ## Scientific Background & Key Concepts
 
-(This section is largely based on the content from the "Information" modal within the application.)
-
 **1. Rumer's Octets:**
 Y.B. Rumer was the first to note that the 16 "columns" (XY-boxes, defined by the first two nucleotides of a codon) in the standard genetic code table can be divided into two groups of eight columns each – the Octets.
 *   **Octet I:** Includes XY-boxes where all four codons (XYN, where N is any of the four nucleotides) code for the same amino acid (complete 4-fold degeneracy).
@@ -93,7 +91,7 @@ They also showed that these four simply-connected codograms form a closed group 
 These four transformations {E, R, R1, R2} form a mathematical group (the Klein four-group V₄).
 
 **5. Codogram Orbits:**
-I (Ruslan Khafizov, contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>), the developer of this tool, established that all 24 codograms are divided into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. Each such orbit contains 4 codograms (nucleotide orders for axes, e.g., TCAG represents T on rows, C on columns etc. for first position, then C for rows, A for columns for second etc.):
+Further analysis by the author of this tool (Ruslan Khafizov, contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>) has shown that all 24 homogeneous codograms are partitioned into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. Each such orbit contains 4 codograms, and this tool demonstrates these orbital structures:
 *   {TCAG, GACT, GCAT, TACG}
 *   {TCGA, GATC, GCTA, TAGC}
 *   {CTAG, AGCT, CGAT, ATCG}
@@ -101,14 +99,14 @@ I (Ruslan Khafizov, contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com<
 *   {TGCA, GTAC, TGAC, GTCA}
 *   {ACGT, CATG, ACTG, CAGT}
 
-**Physico-Chemical and Structural Consequences of Rumer Transformations:**
-*   **Conservation of Amino/Keto Type of XY-boxes:** All Rumer transformations (R, R1, R2) preserve the amino-group (A, C) or keto-group (U, G) nature of each nucleotide.
-*   **Purine ↔ Pyrimidine Transformations (Transversions):** The full R-transformation always acts as a transversion for both nucleotides in an XY-box.
-*   **Regular Changes in Nucleotide Bonding "Strength":** Rumer transformations lead to predictable changes in nucleotide "strength" (H-bonds: Weak W – A/U; Strong S – G/C).
+**Physico-Chemical and Structural Consequences of Rumer-related Transformations:**
+*   **Conservation of Amino/Keto Type of XY-boxes:** All transformations in the {E, R, R1, R2} group preserve the amino-group (A, C) or keto-group (U, G) nature of each nucleotide.
+*   **Purine ↔ Pyrimidine Transformations (Transversions):** The full R-transformation always acts as a transversion for both nucleotides in an XY-box. The "half" transformations R1 and R2 also perform transversions for their target nucleotides.
+*   **Regular Changes in Nucleotide Bonding "Strength":** These transformations lead to predictable changes in nucleotide "strength" (H-bonds: Weak W – A/U; Strong S – G/C).
 
 ## How to Run Locally
 1.  Download or clone this repository.
-2.  Ensure the main HTML file is named `index.html` (or adjust the GitHub Pages settings accordingly if using a different name like `103.html`).
+2.  Ensure the main HTML file is named `index.html` (or `103.html`).
 3.  Open the `index.html` (or `103.html`) file in a modern web browser (e.g., Chrome, Firefox, Edge, Safari).
 
 ## Technologies Used
@@ -124,4 +122,4 @@ Ruslan Khafizov
 *   Contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>
 
 ## License
-MIT License
+[Specify your chosen license here, e.g., MIT License]
