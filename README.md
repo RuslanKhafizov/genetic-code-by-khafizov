@@ -2,7 +2,7 @@
 
 This interactive web tool is designed for visualizing, exploring, and analyzing the structural and mathematical symmetries inherent in the genetic code. Special attention is given to the concepts first proposed by Yuri Borisovich Rumer and their further development, including the analysis of codogram orbits under Rumer's transformation group.
 
-**Live Demo (GitHub Pages):
+**Live Demo (GitHub Pages): https://ruslankhafizov.github.io/genetic-code-by-khafizov
 
 ## Core Features
 
