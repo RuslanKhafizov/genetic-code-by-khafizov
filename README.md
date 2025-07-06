@@ -2,7 +2,8 @@
 
 This interactive web tool is designed for visualizing, exploring, and analyzing structural and mathematical symmetries inherent in the genetic code. It particularly focuses on the concepts related to Rumer's transformations and extends this analysis to the group symmetries formed by codogram orbits.
 
-Live Demo (GitHub Pages): https://ruslankhafizov.github.io/genetic-code-by-khafizov
+*   **[Stable Version](https://ruslankhafizov.github.io/genetic-code-by-khafizov/)** - The original, stable version of the analyzer.
+*   **[Beta Version](https://ruslankhafizov.github.io/genetic-code-by-khafizov/beta.html)** - Includes new and experimental features. For a detailed list of new features, see the bottom of this document.
 
 ## Core Features
 
@@ -116,6 +117,23 @@ Further analysis by the author of this tool (Ruslan Khafizov, contact: <a href="
 *   **Tailwind CSS** (via CDN for styling)
 *   **TinyColor** (via CDN for color manipulation)
 *   HTML5, CSS3, JavaScript (ES6+)
+
+## New Features in the Beta Version
+
+The [Beta Version](https://ruslankhafizov.github.io/genetic-code-by-khafizov/beta.html) includes all stable features plus the following additions:
+
+*   **New Visualization Mode - "By Side Chain Mass":**
+    *   Colors codons based on the mass of their unique side chains (R-groups), categorized into four groups.
+    *   The legend provides a detailed breakdown of R-group masses for each amino acid.
+*   **Dual Mass Summation:**
+    *   The interactive summation tool now calculates and displays both the **Total Mass** and the **Side Chain Mass** of selected codons. Both sums are independently checked for divisibility by 37.
+*   **Enhanced Synthetase Analysis:**
+    *   The "By Synthetase Classes" mode has been upgraded to **"By Synthetase Subtypes"**, providing a more granular analysis with a unique color for each subtype.
+*   **Mini-Matrix Metric Control:**
+    *   A new control panel in the Rumer Orbit Explorer allows users to switch the metric displayed in the mini-matrices between:
+        1.  **Sum of Masses**
+        2.  **Sum of H-Bonds** (a new physical metric)
+        3.  **Hide Numbers** (now the default in Beta).
 
 ## Author
 Ruslan Khafizov
