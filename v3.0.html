@@ -1,0 +1,2013 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Genetic Code Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.6.0/tinycolor.min.js"></script>
+    <style>
+        body { font-family: sans-serif; overflow: hidden; height: 100vh; }
+        #root { height: 100vh; display: flex; flex-direction: column; }
+
+        .order-part { cursor: pointer; padding: 0.1rem 0.25rem; border-radius: 0.125rem; }
+        .order-part:hover { background-color: #e0e0e0; }
+        .order-part.active { background-color: #007bff; color: white; font-weight: bold; }
+        
+        .matrix-big-cell { 
+            padding: 2px; vertical-align: top; 
+            transition: box-shadow 0.2s ease-out, outline 0.2s ease-out;
+        }
+        .sub-row-grid { 
+            display: grid; grid-template-columns: 1fr; grid-template-rows: repeat(4, 1fr); 
+            gap: 1.5px; height: 100%; width: 100%;
+        }
+        .sub-row-item { 
+            display: flex; flex-direction: row; justify-content: stretch; align-items: stretch; 
+            border: 1px solid #d1d5db; 
+            border-radius: 2px; overflow: hidden; text-align: center;
+        }
+        .sub-row-item.selected-for-summing {
+            outline: 2px solid #0d6efd; 
+            outline-offset: -1px; 
+            box-shadow: 0 0 6px rgba(13, 110, 253, 0.6);
+        }
+        .sub-row-codon-part {
+            font-family: monospace; font-size: 0.85rem; font-weight: 500; 
+            padding: 1px 3px; flex-basis: 45%; 
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; 
+            border-right: 1px solid #e0e0e0; 
+        }
+        .sub-row-info-part { 
+            font-family: sans-serif; 
+            font-size: 0.7rem; 
+            font-weight: normal;
+            padding: 1px 3px; flex-basis: 55%; 
+            display: flex; flex-direction: column; 
+            align-items: center; justify-content: center;
+            line-height: 1.1;
+            overflow-wrap: break-word; 
+            word-break: break-all;
+        }
+        .info-part-aa { font-weight: bold; font-size: 0.8rem; margin-bottom: 0px; }
+        .info-part-details, .info-part-anticodons { font-family: monospace; font-size: 0.65rem; line-height: 1; }
+
+        .sub-row-text-dark { color: #212121 !important; }
+        .sub-row-text-light { color: #f0f0f0 !important; }
+        
+        .start-codon-highlight { background-color: #6EE7B7 !important; border-color: #059669 !important; } 
+        .stop-codon-highlight { background-color: #FDA4AF !important; border-color: #E11D48 !important; } 
+        
+        .matrix-header-cell { background-color: #f0f0f0; } 
+        .anticodon-modified-char { color: #D32F2F; font-weight: bold; } 
+
+        .matrix-instance-order-panel { 
+            width: 13rem; 
+            padding: 0.5rem; border-right: 1px solid #e5e7eb;
+            flex-shrink: 0; overflow-y: auto; min-width: 13rem; /* Добавил min-width */
+        }
+        .axis-order-select { 
+            font-size: 0.75rem; padding: 0.25rem; border-radius: 0.25rem;
+            border: 1px solid #d1d5db; margin-top: 0.5rem; width: 100%;
+        }
+        .legend-explanation {
+            margin-top: 0.75rem; padding: 0.5rem; border-top: 1px solid #eee;
+            font-size: 0.7rem; line-height: 1.3; color: #555;
+        }
+        .legend-explanation p { font-size: inherit; line-height: inherit; color: inherit; margin-bottom: 0.5em;}
+        .legend-explanation ul { list-style: none; padding-left: 0; }
+        .legend-explanation li { font-family: monospace; font-size: 0.65rem; }
+        
+        .highlight-rumer-hover {
+            outline: 3px dashed orange !important;
+            box-shadow: 0 0 6px 1px orange;
+        }
+        .matrix-instance-properties-panel { 
+             width: 13rem; padding: 0.5rem; border-left: 1px solid #e5e7eb; 
+             flex-shrink: 0; overflow-y: auto; min-width: 13rem; /* Добавил min-width */
+        }
+
+        .rumer-explorer-app {
+            --cell-base-size: 3.8vmin;  /* Еще немного уменьшил для адаптивности */
+            --matrix-wrapper-padding: calc(var(--cell-base-size) * 0.1);
+            --label-font-size: calc(var(--cell-base-size) * 0.40); 
+            --matrix-title-font-size: calc(var(--cell-base-size) * 0.36);
+            --re-selector-panel-width: 220px; /* Еще немного уменьшил */
+            --mass-in-cell-font-size: calc(var(--cell-base-size) * 0.26); 
+            --sum-font-size: calc(var(--cell-base-size) * 0.29); 
+            --sum-cell-size: calc(var(--cell-base-size) * 0.80); 
+
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            color: #212529; display: flex; flex-direction: row;
+            height: 100%; width: 100%; overflow: hidden; 
+        }
+        .rumer-explorer-app > div { /* Для контейнеров w-2/5 и w-3/5 */
+            min-width: 0; /* Позволяет им сжиматься */
+        }
+
+        .rumer-explorer-app .orbit-selector-panel { 
+            flex-shrink: 0; 
+            width: var(--re-selector-panel-width); 
+            min-width: var(--re-selector-panel-width); /* Фиксируем мин. ширину */
+            padding: 8px; 
+            background-color: #f8f9fa; 
+            border-right: 1px solid #dee2e6; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+            z-index: 10; 
+        }
+        .rumer-explorer-app .orbit-selector-panel h2 { 
+            margin-top: 0; margin-bottom: 8px; font-size: 0.95em; 
+            color: #343a40; text-align: center; font-weight: 600; 
+        }
+        .rumer-explorer-app .orbit-selector-panel button:not(.formula-btn-class):not(.genetic-code-btn) { 
+             width: 100%; 
+             padding: 7px 5px; 
+             font-size: 0.68em; 
+             cursor: pointer; 
+             background-color: #fff; 
+             color: #495057; 
+             border: 1px solid #ced4da; 
+             border-radius: 0.25rem; 
+             transition: all 0.15s ease-in-out; 
+             white-space: normal; 
+             text-align: left;    
+             line-height: 1.25;   
+             min-height: 34px; 
+        }
+        .rumer-explorer-app .orbit-selector-panel button:not(.formula-btn-class):not(.genetic-code-btn):hover { 
+            background-color: #e9ecef; border-color: #adb5bd; 
+        }
+        .rumer-explorer-app .orbit-selector-panel button:not(.formula-btn-class):not(.genetic-code-btn).active { 
+            background-color: #007bff; color: white; border-color: #007bff; 
+            font-weight: 500; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); 
+        }
+        
+        .rumer-explorer-app .main-visualization-area { 
+            flex-grow: 1; display: flex; flex-direction: column;
+            justify-content: flex-start; align-items: center; 
+            padding: 8px; 
+            padding-top: 0px; /* Reduced padding */
+            overflow: auto; background-color: #ffffff; min-width: 0;
+        }
+        .rumer-explorer-app .orbit-display-area { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-template-rows: auto auto;    
+            gap: calc(var(--cell-base-size) * 1.0); 
+            align-items: start; 
+            justify-items: center; 
+            margin-bottom: 1rem;
+            padding: calc(var(--cell-base-size) * 0.2);
+            width: 100%; 
+        }
+        .rumer-explorer-app .matrix-pos-0 { grid-area: 1 / 1; } .rumer-explorer-app .matrix-pos-1 { grid-area: 1 / 2; } .rumer-explorer-app .matrix-pos-2 { grid-area: 2 / 1; } .rumer-explorer-app .matrix-pos-3 { grid-area: 2 / 2; } 
+        
+        .rumer-control-panel-section { margin-bottom: 8px; padding-top: 6px; border-top: 1px solid #d0d6db;}
+        .rumer-control-panel-section:first-of-type { border-top: none; padding-top:0; }
+        .rumer-control-panel-section h3 { margin-top: 0; margin-bottom: 5px; color: #343a40; font-size: 0.72rem; font-weight: 600; border-bottom: 1px solid #e0e0e0; padding-bottom: 3px; }
+        .rumer-control-panel-section p { margin-bottom: 0.5em; font-size: 0.68rem; line-height: 1.2; }
+        .rumer-control-panel-section .formula-btn-class { 
+            font-family: Consolas, 'Courier New', Courier, monospace; padding: 3px 5px; 
+            background-color: #fff; border: 1px solid #e0e0e0; border-radius: 0.25rem; 
+            margin-bottom: 4px; display: block; cursor: pointer; 
+            transition: all 0.15s ease-out; font-size:0.68rem; 
+        }
+        .rumer-control-panel-section .formula-btn-class:hover:not(.active-formula) { background-color: #e9ecef; border-color: #c0c6cc;}
+        .rumer-control-panel-section .formula-btn-class.active-formula { background-color: #007bff; color: white; border-color: #0056b3; box-shadow: 0 1px 4px rgba(0, 100, 200, 0.3); font-weight: bold; }
+        .rumer-control-panel-section .formula-btn-class.active-formula .transform-part { color: white !important; font-weight: bold;}
+        .rumer-control-panel-section .transform-part { 
+            padding: 1px 2px; border-radius: 2px; font-weight: 500; 
+            display: inline-block; transition: background-color 0.1s, color 0.1s; 
+        }
+        .rumer-control-panel-section .formula-btn-class:not(.active-formula) .transform-part:hover { background-color: #ffc107 !important; color: #212529 !important;}
+        
+        .rumer-control-panel-section .genetic-code-btn { 
+            width: 100%; padding: 4px 7px; font-size: 0.68rem; margin-bottom: 3px;
+            border: 1px solid #ced4da; border-radius: 0.25rem; background-color: #fff;
+            text-align: left; cursor: pointer;
+        }
+        .rumer-control-panel-section .genetic-code-btn.active-code { background-color: #28a745; color:white; border-color: #1e7e34; font-weight: bold;}
+        .rumer-control-panel-section select.genetic-code-btn { -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2em; }
+        .info-modal-btn { 
+            text-align: center !important; background-color: #6c757d !important; color: white !important;
+            padding: 6px 10px; font-size: 0.75rem; border: 1px solid #5a6268; border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        .info-modal-btn:hover { background-color: #5a6268 !important; }
+
+
+        .rumer-control-panel-section #rumerCodonInfoDisplay { display: none; } 
+        
+        .symmetry-analysis-container {
+            width: 90%; max-width: 600px; margin-top: 1rem; padding: 0.75rem;
+            background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.25rem;
+            font-size: 0.75rem; line-height: 1.4; max-height: 250px; overflow-y: auto;
+        }
+        .symmetry-analysis-container h4 { font-weight: bold; font-size: 0.85rem; margin-bottom: 0.5rem; color: #343a40;}
+        .symmetry-analysis-container p { margin-bottom: 0.4em; font-size: 0.75rem; }
+        .symmetry-analysis-container ul { padding-left: 1rem; margin-top: 0.25rem; margin-bottom: 0.5rem; list-style-type: disc; }
+        .symmetry-analysis-container li { margin-bottom: 0.2rem; font-size: 0.75rem; }
+        .symmetry-analysis-container .text-green-600 { color: #16a34a; } 
+        .symmetry-analysis-container .text-red-600 { color: #dc2626; } 
+
+
+        .rumer-explorer-app .mini-matrix-overall-container { display: flex; flex-direction: column; align-items: center; }
+        .rumer-explorer-app .matrix-title { font-family: 'Courier New', Courier, monospace; font-size: var(--matrix-title-font-size); font-weight: bold; text-align: center; margin-bottom: calc(var(--cell-base-size) * 0.1); color: #1a1a1a; min-height: 1.1em; }
+        .rumer-explorer-app .matrix-title span.nucleotide-in-title.highlighted-temp,
+        .rumer-explorer-app .matrix-title span.nucleotide-in-title.highlighted-active { background-color: #ffdd57; color: black; padding: 0 2px; border-radius: 3px; }
+        
+        .rumer-explorer-app .mini-matrix-grid-wrapper { 
+            display: grid;
+            grid-template-columns: var(--sum-cell-size) repeat(4, var(--cell-base-size)) var(--sum-cell-size);
+            grid-template-rows: var(--sum-cell-size) repeat(4, var(--cell-base-size)) var(--sum-cell-size);
+            border: 1px solid #777;
+            background-color: #fff;
+            padding: var(--matrix-wrapper-padding);
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            gap: 1.5px; 
+        }
+
+        .rumer-explorer-app .mini-matrix-label-cell,
+        .rumer-explorer-app .mini-matrix-corner-cell,
+        .rumer-explorer-app .sum-cell {
+            width: 100%; 
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .rumer-explorer-app .mini-matrix-corner-cell {
+             background-color: #f0f0f0;
+             border: 1px solid #e0e0e0; 
+        }
+        .rumer-explorer-app .sum-header-corner { 
+            background-color: #e8e8e8; 
+            border: 1px solid #d8d8d8;
+        }
+
+        .rumer-explorer-app .mini-matrix-label-cell {
+            font-size: var(--label-font-size);
+            font-weight: bold;
+            color: #333;
+            transition: background-color 0.1s, color 0.1s;
+            border: 1px solid #e0e0e0; 
+        }
+         .rumer-explorer-app .mini-matrix-label-cell.highlighted-temp,
+         .rumer-explorer-app .mini-matrix-label-cell.highlighted-active {
+            background-color: #ffdd57; color: black; font-weight: bold;
+         }
+
+        .rumer-explorer-app .mini-matrix-cell {
+            border: 1px solid #eee;
+            box-sizing: border-box;
+            cursor: default;
+            position: relative; 
+            display: flex; 
+            justify-content: center;
+            align-items: center;
+        }
+        .rumer-explorer-app .mass-in-cell {
+            font-family: monospace;
+            font-size: var(--mass-in-cell-font-size);
+            font-weight: 500; 
+            pointer-events: none; 
+            position: absolute; 
+            line-height: 1; 
+        }
+        .rumer-explorer-app .octet-I .mass-in-cell { color: white; }
+        .rumer-explorer-app .octet-II .mass-in-cell { color: black; }
+        .rumer-explorer-app .mini-matrix-cell.was-octetI-now-II .mass-in-cell { color: black; } 
+        .rumer-explorer-app .mini-matrix-cell.was-octetII-now-I .mass-in-cell { color: white; } 
+
+
+        .rumer-explorer-app .octet-I { background-color: black; }
+        .rumer-explorer-app .octet-II { background-color: white; } 
+        .rumer-explorer-app .mini-matrix-cell.status-changed::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-width: 2px; border-style: solid; pointer-events: none; border-radius: 1px; }
+        .rumer-explorer-app .mini-matrix-cell.was-octetI-now-II.status-changed::before { border-color: #e53935; }
+        .rumer-explorer-app .mini-matrix-cell.was-octetII-now-I.status-changed::before { border-color: #43a047; }
+        .rumer-explorer-app .mini-matrix-cell.highlight-partner-transform::before { 
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border: 3px dashed #FF9800; 
+            pointer-events: none; border-radius: 1px;
+            box-sizing: border-box;
+        }
+
+        .rumer-explorer-app .sum-cell {
+            background-color: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            font-family: monospace;
+            font-size: var(--sum-font-size);
+            color: #333;
+            font-weight: 500;
+        }
+        .rumer-explorer-app .sum-cell.grand-total-cell {
+            background-color: #e0e0e0; 
+            font-weight: bold;
+        }
+
+        .matrix-table-container table { table-layout: fixed; } 
+        .matrix-table-wrapper { display: flex; justify-content: center; width: 100%; }
+        .matrix-table-container { min-width: calc(4 * 8.5rem + 3.5rem + 4px); width: calc(4 * 8.5rem + 3.5rem + 4px); }
+
+        /* Стили для модального окна Info */
+        .info-modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .info-modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .info-modal-content h2 { font-size: 1.5em; margin-bottom: 15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+        .info-modal-content h3 { font-size: 1.1em; margin-top: 15px; margin-bottom: 8px; color: #444; }
+        .info-modal-content h4 { font-size: 1.0em; margin-top: 10px; margin-bottom: 5px; color: #555; font-weight:bold; }
+        .info-modal-content p, .info-modal-content li { font-size: 0.85rem; line-height: 1.6; margin-bottom: 0.75em; color: #555; }
+        .info-modal-content ul { list-style-position: outside; padding-left: 20px; margin-bottom: 0.75em; }
+        .info-modal-content ul ul { margin-top: 0.25em; }
+        .info-modal-content code, .info-modal-content kbd {
+             background-color: #f0f0f0; padding: 0.1em 0.3em; border-radius: 3px; font-family: monospace; font-size: 0.9em;
+        }
+        .info-modal-content a {
+            color: #007bff; 
+            text-decoration: underline;
+        }
+        .info-modal-content a:hover {
+            color: #0056b3; 
+        }
+
+        .info-modal-lang-toggle button {
+            padding: 6px 12px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;
+        }
+        .info-modal-lang-toggle button.active-lang { 
+            background-color: #007bff; color: white; border-color: #007bff;
+        }
+        .info-modal-lang-toggle button:not(.active-lang) { 
+            background-color: #f0f0f0; color: #333; 
+        }
+         .info-modal-lang-toggle button:not(.active-lang):hover {
+            background-color: #e0e0e0;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, Fragment, useEffect, useCallback, useRef } = React;
+
+        // --- ГЛОБАЛЬНЫЕ КОНСТАНТЫ И УТИЛИТЫ ---
+        const baseNucleotidesInternalGlobal = ['U', 'C', 'A', 'G']; 
+        const displayNucleotidesOrder = ['T', 'C', 'A', 'G']; 
+        const formatNucleotideDisplay = (nuc) => (nuc === 'U' ? 'T' : nuc);
+        const formatOrderForDisplay = (orderArray) => orderArray.map(formatNucleotideDisplay).join('');
+        
+        const originalGeneticCodeTable = {'UUU':'Phe','UUC':'Phe','UUA':'Leu','UUG':'Leu','UCU':'Ser','UCC':'Ser','UCA':'Ser','UCG':'Ser','UAU':'Tyr','UAC':'Tyr','UAA':'STOP','UAG':'STOP','UGU':'Cys','UGC':'Cys','UGA':'STOP','UGG':'Trp','CUU':'Leu','CUC':'Leu','CUA':'Leu','CUG':'Leu','CCU':'Pro','CCC':'Pro','CCA':'Pro','CCG':'Pro','CAU':'His','CAC':'His','CAA':'Gln','CAG':'Gln','CGU':'Arg','CGC':'Arg','CGA':'Arg','CGG':'Arg','AUU':'Ile','AUC':'Ile','AUA':'Ile','AUG':'Met','ACU':'Thr','ACC':'Thr','ACA':'Thr','ACG':'Thr','AAU':'Asn','AAC':'Asn','AAA':'Lys','AAG':'Lys','AGU':'Ser','AGC':'Ser','AGA':'Arg','AGG':'Arg','GUU':'Val','GUC':'Val','GUA':'Val','GUG':'Val','GCU':'Ala','GCC':'Ala','GCA':'Ala','GCG':'Ala','GAU':'Asp','GAC':'Asp','GAA':'Glu','GAG':'Glu','GGU':'Gly','GGC':'Gly','GGA':'Gly','GGG':'Gly'};
+        const aminoAcidFullName = {'Ala':'Alanine','Arg':'Arginine','Asn':'Asparagine','Asp':'Aspartic Acid','Cys':'Cysteine','Gln':'Glutamine','Glu':'Glutamic Acid','Gly':'Glycine','His':'His','Ile':'Isoleucine','Leu':'Leucine','Lys':'Lysine','Met':'Methionine','Phe':'Phenylalanine','Pro':'Proline','Ser':'Serine','Thr':'Threonine','Trp':'Tryptophan','Tyr':'Tyrosine','Val':'Valine','STOP':'STOP', '*': 'STOP'};
+        
+        const aminoAcidAtomicWeights = {'Gly': 75,  'Ala': 89,   'Ser': 105,  'Pro': 115,  'Val': 117, 'Thr': 119, 'Cys': 121,  'Leu': 131,  'Ile': 131,  'Asn': 132, 'Asp': 133, 'Gln': 146,  'Lys': 146,  'Glu': 147,  'Met': 149, 'His': 155, 'Phe': 165,  'Arg': 174,  'Tyr': 181,  'Trp': 204, 'STOP': 74, '?': 0, '*': 74 };
+        
+        const aminoAcidAtomCounts = {
+            'Ala': { C: 3, H: 7, N: 1, O: 2, S: 0 },  'Arg': { C: 6, H: 14, N: 4, O: 2, S: 0 },
+            'Asn': { C: 4, H: 8, N: 2, O: 3, S: 0 },  'Asp': { C: 4, H: 7, N: 1, O: 4, S: 0 },
+            'Cys': { C: 3, H: 7, N: 1, O: 2, S: 1 },  'Gln': { C: 5, H: 10, N: 2, O: 3, S: 0 },
+            'Glu': { C: 5, H: 9, N: 1, O: 4, S: 0 },  'Gly': { C: 2, H: 5, N: 1, O: 2, S: 0 },
+            'His': { C: 6, H: 9, N: 3, O: 2, S: 0 },  'Ile': { C: 6, H: 13, N: 1, O: 2, S: 0 },
+            'Leu': { C: 6, H: 13, N: 1, O: 2, S: 0 },  'Lys': { C: 6, H: 14, N: 2, O: 2, S: 0 },
+            'Met': { C: 5, H: 11, N: 1, O: 2, S: 1 },  'Phe': { C: 9, H: 11, N: 1, O: 2, S: 0 },
+            'Pro': { C: 5, H: 9, N: 1, O: 2, S: 0 },  'Ser': { C: 3, H: 7, N: 1, O: 3, S: 0 },
+            'Thr': { C: 4, H: 9, N: 1, O: 3, S: 0 },  'Trp': { C: 11, H: 12, N: 2, O: 2, S: 0 },
+            'Tyr': { C: 9, H: 11, N: 1, O: 3, S: 0 },  'Val': { C: 5, H: 11, N: 1, O: 2, S: 0 },
+            'STOP':{ C: 0, H: 0, N: 0, O: 0, S: 0 },  '?':   { C: 0, H: 0, N: 0, O: 0, S: 0 }
+        };
+
+        const aminoAcidSideChainWeights = {};
+        for (const key in aminoAcidAtomicWeights) {
+            if(key !== 'STOP' && key !== '?' && key !== '*') {
+                aminoAcidSideChainWeights[key] = aminoAcidAtomicWeights[key] - 74;
+            } else {
+                 aminoAcidSideChainWeights[key] = 0;
+            }
+        }
+        
+        const dnaNucleotideResidueMasses = { U: 304, C: 289, A: 313, G: 329 };
+        const rnaNucleotideResidueMasses = { U: 306, C: 305, A: 329, G: 345 };
+        const freeDnaNucleotideMasses = { U: 322, C: 307, A: 331, G: 347 };
+        const freeRnaNucleotideMasses = { U: 324, C: 323, A: 347, G: 363 };
+        const WATER_MASS = 18;
+        
+        const nucleotideHBonds = { 'U': 2, 'C': 3, 'A': 2, 'G': 3 };
+
+        const sideChainMassCategories = {
+          small: { min: 75, max: 89, color: '#a7f3d0', label: 'Small (75-89 Da)' },
+          medium: { min: 105, max: 121, color: '#bae6fd', label: 'Medium (105-121 Da)' },
+          large: { min: 131, max: 155, color: '#fde047', label: 'Large (131-155 Da)' },
+          aromatic: { min: 165, max: 204, color: '#fda4af', label: 'Aromatic/Complex (165-204 Da)' },
+        };
+        const getSideChainCategory = (fullMass) => {
+          if (!fullMass) return null;
+          for (const key in sideChainMassCategories) {
+            const category = sideChainMassCategories[key];
+            if (fullMass >= category.min && fullMass <= category.max) {
+              return category;
+            }
+          }
+          return null;
+        };
+
+        const RUMER_EXPLORER_NUCLEOTIDES_INTERNAL = ['U', 'C', 'A', 'G']; 
+        const RUMER_EXPLORER_THIRD_POS_NUCLEOTIDES_INTERNAL = ['U', 'C', 'A', 'G'];
+        const STANDARD_OCTET_I_XY_PAIRS_INTERNAL = new Set(["GC", "CG", "GG", "CC", "AC", "GU", "CU", "UC"].map(pair => pair.replace(/T/g, 'U')));
+
+        function parseNcbICode(name, id, AAsStr, Base1Str, Base2Str, Base3Str, category = 'other') {
+            const code = { name: name, id: `transl_table_${id}`, category: category};
+            if (AAsStr.length !== 64 || Base1Str.length !== 64 || Base2Str.length !== 64 || Base3Str.length !== 64) {
+                console.error(`Error in string lengths for code ${name} (ID: ${id})`);
+                return null;
+            }
+            for (let i = 0; i < 64; i++) {
+                const codon = (Base1Str[i] + Base2Str[i] + Base3Str[i]).replace(/T/g, 'U');
+                code[codon] = AAsStr[i]; 
+            }
+            return code;
+        }
+
+        const geneticCodesForRumerExplorer = {
+            transl_table_1: parseNcbICode("Standard Code", 1, "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'standard'),
+            transl_table_12: parseNcbICode("Alternative Yeast Nuclear", 12, "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_26: parseNcbICode("Pachysolen Nuclear", 26, "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_29: parseNcbICode("Mesodinium Nuclear", 29, "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_5: parseNcbICode("Invertebrate Mitochondrial", 5, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_9: parseNcbICode("Echinoderm/Flatworm Mitochondrial", 9, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_14: parseNcbICode("Alternative Flatworm Mitochondrial", 14, "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_21: parseNcbICode("Trematode Mitochondrial", 21, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_22: parseNcbICode("Scenedesmus Mitochondrial", 22, "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_2: parseNcbICode("Vertebrate Mitochondrial", 2, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_3: parseNcbICode("Yeast Mitochondrial", 3, "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_4: parseNcbICode("Mold/Protozoan/Coelenterate Mitochondrial", 4, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'), 
+            transl_table_6: parseNcbICode("Ciliate/Dasycladacean/Hexamita Nuclear", 6, "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_10: parseNcbICode("Euplotid Nuclear", 10, "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_11: parseNcbICode("Bacterial/Archaeal/Plant Plastid", 11, "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'bacterial_plastid'),
+            transl_table_13: parseNcbICode("Ascidian Mitochondrial", 13, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_15: parseNcbICode("Blepharisma Nuclear", 15, "FFLLSSSSYY*QCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'), 
+            transl_table_16: parseNcbICode("Chlorophycean Mitochondrial", 16, "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_23: parseNcbICode("Thraustochytrium Mitochondrial", 23, "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_24: parseNcbICode("Rhabdopleuridae Mitochondrial", 24, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_25: parseNcbICode("Candidate Division SR1 and Gracilibacteria", 25, "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'bacterial_plastid'),
+            transl_table_27: parseNcbICode("Karyorelict Nuclear", 27, "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_28: parseNcbICode("Condylostoma Nuclear", 28, "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_30: parseNcbICode("Peritrich Nuclear", 30, "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_31: parseNcbICode("Blastocrithidia Nuclear", 31, "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'nuclear'),
+            transl_table_32: parseNcbICode("Balanophoraceae Plastid",32, "FFLLSSSSYY*WCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'bacterial_plastid'),
+            transl_table_33: parseNcbICode("Cephalodiscidae Mitochondrial", 33, "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'mitochondrial'),
+            transl_table_34: parseNcbICode("The Enterosoma Code (UGA->W)", 34, "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'unofficial'),
+            transl_table_35: parseNcbICode("The Peptacetobacter Code (UGA->G)", 35, "FFLLSSSSYY**CC*GLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'unofficial'),
+            transl_table_36: parseNcbICode("Anaerococcus/Onthovivens Code (UGA->W, CUG->S)", 36, "FFLLSSSSYY**CCWWLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'unofficial'),
+            transl_table_37: parseNcbICode("Absconditabacterales Code (UGA->G, UAG->A)", 37, "FFLLSSSSYY*ACC*GLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG", "TTTTTTTTTTTTTTTTCCCCCCCCCCCCCCCCAAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGG", "TTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGGTTTTCCCCAAAAGGGG", "TCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAGTCAG", 'unofficial')
+        };
+        
+        const oneToThreeLetterAA = { 'A':'Ala', 'R':'Arg', 'N':'Asn', 'D':'Asp', 'C':'Cys', 'Q':'Gln', 'E':'Glu', 'G':'Gly', 'H':'His', 'I':'Ile', 'L':'Leu', 'K':'Lys', 'M':'Met', 'F':'Phe', 'P':'Pro', 'S':'Ser', 'T':'Thr', 'W':'Trp', 'Y':'Tyr', 'V':'Val', '*':'STOP' }; 
+        const threeToOneLetterAA = {};
+        for (const key in oneToThreeLetterAA) { threeToOneLetterAA[oneToThreeLetterAA[key]] = key; }
+
+        const startCodon = 'AUG'; const stopCodonsStandard = new Set(['UAA', 'UAG', 'UGA']);
+        const aminoAcidBackgroundsVibrant = {'Ala':'#FFECB3','Val':'#FFE082','Ile':'#FFD54F','Leu':'#FFCA28','Met':'#FF8F00','Phe':'#7E57C2','Trp':'#5E35B1','Pro':'#BA68C8','Gly':'#CFD8DC','Ser':'#81C784','Thr':'#66BB6A','Cys':'#FFB74D','Tyr':'#D4E157','Asn':'#4DD0E1','Gln':'#26A69A','Asp':'#EF5350','Glu':'#E53935','Lys':'#42A5F5','Arg':'#1E88E5','His':'#9575CD','STOP':'#EF9A9A'};
+        
+        const synthetaseSubtypeData = {
+            'Val': { class: 'I', subtype: 'IA' },  'Ile': { class: 'I', subtype: 'IA' },
+            'Leu': { class: 'I', subtype: 'IA' },  'Met': { class: 'I', subtype: 'IA' },
+            'Cys': { class: 'I', subtype: 'IB' },  'Glu': { class: 'I', subtype: 'IB' },
+            'Tyr': { class: 'I', subtype: 'IC' },  'Trp': { class: 'I', subtype: 'IC' },
+            'Arg': { class: 'I', subtype: 'ID' },
+            'Gln': { class: 'I', subtype: 'N/A' },
+            'Gly': { class: 'II', subtype: 'IIA' }, 'Ser': { class: 'II', subtype: 'IIA' }, 
+            'Pro': { class: 'II', subtype: 'IIA' }, 'His': { class: 'II', subtype: 'IIA' },
+            'Thr': { class: 'II', subtype: 'IIA' },
+            'Asp': { class: 'II', subtype: 'IIB' }, 'Asn': { class: 'II', subtype: 'IIB' },
+            'Phe': { class: 'II', subtype: 'IIC' }, 
+            'Ala': { class: 'II', subtype: 'IID' },
+            'Lys': { class: 'II', subtype: 'II-special' },
+            'STOP':{ class: 'Other', subtype: 'N/A' }
+        };
+
+        const synthetaseSubtypeColors = {
+            'IA': '#38bdf8', 'IB': '#22d3ee', 'IC': '#818cf8', 'ID': '#60a5fa', 
+            'IIA': '#facc15', 'IIB': '#fb923c', 'IIC':'#c084fc', 'IID': '#f87171',
+            'II-special': '#fb7185',
+            'N/A': '#d1d5db', 'default': '#e5e7eb'
+        };
+
+        const customTRNAAnticodons = {
+            "UUU": { aa: "Phe", ac: "GAA" }, "UUC": { aa: "Phe", ac: "GAA" },
+            "UUA": { aa: "Leu", ac: "U*AA" }, "UUG": { aa: "Leu", ac: "U*AA" },
+            "UCU": { aa: "Ser", ac: "GGA" }, "UCC": { aa: "Ser", ac: "GGA" },
+            "UAU": { aa: "Tyr", ac: "GUA" }, "UAC": { aa: "Tyr", ac: "GUA" },
+            "UGU": { aa: "Cys", ac: "GCA" }, "UGC": { aa: "Cys", ac: "GCA" },
+            "UCA": { aa: "Ser", ac: "UGA" }, "UCG": { aa: "Ser", ac: "UGA" },
+            "UAA": { aa: "STOP", ac: "STOP" }, "UAG": { aa: "STOP", ac: "STOP" }, 
+            "UGA": { aa: "STOP", ac: "STOP" }, "UGG": { aa: "Trp", ac: "CCA" },    
+            "CUU": { aa: "Leu", ac: "GAG" }, "CUC": { aa: "Leu", ac: "GAG" },
+            "CCU": { aa: "Pro", ac: "GGG" }, "CCC": { aa: "Pro", ac: "GGG" },
+            "CAU": { aa: "His", ac: "GUG" }, "CAC": { aa: "His", ac: "GUG" },
+            "CGU": { aa: "Arg", ac: "GCG" }, "CGC": { aa: "Arg", ac: "GCG" },
+            "CUA": { aa: "Leu", ac: "UAG" }, "CUG": { aa: "Leu", ac: "UAG" },
+            "CCA": { aa: "Pro", ac: "UGG" }, "CCG": { aa: "Pro", ac: "UGG" },
+            "CAA": { aa: "Gln", ac: "U*UG" }, "CAG": { aa: "Gln", ac: "U*UG" },
+            "CGA": { aa: "Arg", ac: "UCG" }, "CGG": { aa: "Arg", ac: "UCG" },
+            "AUU": { aa: "Ile", ac: "GAU" }, "AUC": { aa: "Ile", ac: "GAU" },
+            "ACU": { aa: "Thr", ac: "GGU" }, "ACC": { aa: "Thr", ac: "GGU" },
+            "AAU": { aa: "Asn", ac: "GUU" }, "AAC": { aa: "Asn", ac: "GUU" },
+            "AGU": { aa: "Ser", ac: "GCU" }, "AGC": { aa: "Ser", ac: "GCU" },
+            "AUA": { aa: "Ile", ac: "U*AU?" }, "AUG": { aa: "Met", ac: "CAU,CAU" }, 
+            "ACA": { aa: "Thr", ac: "UGU" }, "ACG": { aa: "Thr", ac: "UGU" },
+            "AAA": { aa: "Lys", ac: "U*UU" }, "AAG": { aa: "Lys", ac: "U*UU" },
+            "AGA": { aa: "Arg", ac: "U*CU?" }, "AGG": { aa: "Arg", ac: "CCU" },
+            "GUU": { aa: "Val", ac: "GAC" }, "GUC": { aa: "Val", ac: "GAC" },
+            "GCU": { aa: "Ala", ac: "GGC" }, "GCC": { aa: "Ala", ac: "GGC" },
+            "GAU": { aa: "Asp", ac: "GUC" }, "GAC": { aa: "Asp", ac: "GUC" },
+            "GGU": { aa: "Gly", ac: "GCC" }, "GGC": { aa: "Gly", ac: "GCC" }, 
+            "GUA": { aa: "Val", ac: "UAC" }, "GUG": { aa: "Val", ac: "UAC" },
+            "GCA": { aa: "Ala", ac: "UGC" }, "GCG": { aa: "Ala", ac: "UGC" },
+            "GAA": { aa: "Glu", ac: "UUC" }, "GAG": { aa: "Glu", ac: "UUC" },
+            "GGA": { aa: "Gly", ac: "UCC" }, "GGG": { aa: "Gly", ac: "UCC" }
+        };
+        const anticodonFirstBaseColors = {
+            'G': '#a7f3d0', 'U': '#fecaca', 'C': '#bfdbfe', 'A': '#fef08a', 'default': '#e5e7eb'
+        };
+        
+        const hydrophobicityCategories = {'Ala':'Hydrophobic','Val':'Hydrophobic','Leu':'Hydrophobic','Ile':'Hydrophobic','Met':'Hydrophobic','Phe':'Hydrophobic','Trp':'Hydrophobic','Pro':'Hydrophobic','Gly':'Neutral','Ser':'Polar','Thr':'Polar','Cys':'Polar','Tyr':'Polar','Asn':'Polar','Gln':'Polar','Asp':'Charged (-)','Glu':'Charged (-)','Lys':'Charged (+)','Arg':'Charged (+)','His':'Charged (+)','STOP':'STOP'}; 
+        const hydrophobicityColors = {Hydrophobic:'#FFC107',Polar:'#B3E5FC',Neutral:'#B0BEC5','Charged (+)':'#A5D6A7','Charged (-)':'#FFCDD2',STOP:'#9E9E9E'};  
+        
+        const chargeCategories = {'Lys':'Positive','Arg':'Positive','His':'Positive','Asp':'Negative','Glu':'Negative','Ala':'Neutral','Val':'Neutral','Leu':'Neutral','Ile':'Neutral','Met':'Neutral','Phe':'Neutral','Trp':'Neutral','Pro':'Neutral','Gly':'Neutral','Ser':'Neutral','Thr':'Neutral','Cys':'Neutral','Tyr':'Neutral','Asn':'Neutral','Gln':'Neutral','STOP':'STOP'}; 
+        const chargeColorsUpdated = {Positive:'#90CAF9',Negative:'#F48FB1',Neutral:'#FFF59D',STOP:'#E0E0E0'}; 
+        
+        const contentRichnessColors = { auRich: { bg: '#A1887F', text: '#FFFFFF' }, cgRich: { bg: '#4DD0E1', text: '#000000' } };
+        const puPyCodeColors = { '000': { bg: '#FFEB3B', text: '#212121' }, '001': { bg: '#FFC107', text: '#212121' }, '010': { bg: '#8BC34A', text: '#212121' }, '011': { bg: '#4CAF50', text: '#FFFFFF' }, '100': { bg: '#2196F3', text: '#FFFFFF' }, '101': { bg: '#3F51B5', text: '#FFFFFF' }, '110': { bg: '#9C27B0', text: '#FFFFFF' }, '111': { bg: '#E91E63', text: '#FFFFFF' } };
+        const aminoKetoTypes = { 'A': 'amino', 'C': 'amino', 'G': 'keto',  'U': 'keto', 'T': 'keto' }; 
+        const aminoKetoCellColors = { 'amino-amino': { bg: '#FFCDD2', text: '#212121', legend: 'Amino-Amino'}, 'amino-keto':  { bg: '#C5E1A5', text: '#212121', legend: 'Amino-Keto'}, 'keto-amino':  { bg: '#B3E5FC', text: '#212121', legend: 'Keto-Amino'}, 'keto-keto':   { bg: '#FFF59D', text: '#212121', legend: 'Keto-Keto'} }; 
+        
+        const nucleotidePropsGlobal = { 'U':{type:'pyrimidine',strength:'weak'},'C':{type:'pyrimidine',strength:'strong'},'A':{type:'purine',strength:'weak'},'G':{type:'purine',strength:'strong'}}; 
+        const baseColorsGlobal = { 
+            strength:{ss:'#ffeb3b',ww:'#f44336',mixedEven:'#4caf50',mixedOdd:'#2196f3',default:'#fff', legend: {ss: 'Strong-Strong (S-S)', ww: 'Weak-Weak (W-W)', mixedEven: 'Mixed S-W/W-S (even idx sum)', mixedOdd: 'Mixed S-W/W-S (odd idx sum)'}}, 
+            type:{pp:'#ffeb3b',yy:'#f44336',py:'#4caf50',yp:'#2196f3',default:'#fff', legend: {pp: 'Purine-Purine', yy: 'Pyrimidine-Pyrimidine', py: 'Purine-Pyrimidine', yp: 'Pyrimidine-Purine'}}, 
+            rumer:{octetI:'#6A00FF',octetII:'#FFFDE7', legend: {octetI: 'Octet I (4-fold degen.)', octetII: 'Octet II (mixed/2-fold)'}} 
+        }; 
+        const purinesGlobal = new Set(['A', 'G']);
+        const getPuPyCodeForCodon = (codon) => { if (!codon || codon.length !== 3) return "---"; let binaryCode = ""; for (let i = 0; i < 3; i++) { binaryCode += purinesGlobal.has(codon[i].toUpperCase()) ? '0' : '1'; } return binaryCode; };
+        const rumerTransformBase = (base) => { if (base === 'U') return 'G'; if (base === 'G') return 'U'; if (base === 'C') return 'A'; if (base === 'A') return 'C'; return base; };
+        const getRumerPartnerKey = (nuc1Internal, nuc2Internal) => { const n1Transformed = rumerTransformBase(nuc1Internal); const n2Transformed = rumerTransformBase(nuc2Internal); return `${formatNucleotideDisplay(n1Transformed)}${formatNucleotideDisplay(n2Transformed)}`; };
+        const getTextColorForBackground = (bgColor) => { if (!bgColor || bgColor === 'transparent' || bgColor === '#FFFFFF') return '#212121'; return tinycolor(bgColor).isDark() ? '#FFFFFF' : '#212121'; };
+        const formatAnticodonDisplayJsx = (anticodonStr) => { 
+            if (!anticodonStr || anticodonStr === "STOP" || anticodonStr === "N/A") return React.createElement(Fragment, null, anticodonStr || "?"); 
+            return anticodonStr.split(',').map((singleAnticodon, idx, arr) => { 
+                const trimmedAnticodon = singleAnticodon.trim(); 
+                if (!trimmedAnticodon) return null; 
+                const parts = trimmedAnticodon.split(/([UC]\*)/g).filter(Boolean); 
+                return React.createElement(React.Fragment, { key: `${trimmedAnticodon}-${idx}` }, 
+                    parts.map((part, partIdx) => { 
+                        if (part.endsWith('*') && (part.startsWith('U') || part.startsWith('C'))) { 
+                            return React.createElement('span', { key: partIdx, className: 'anticodon-modified-char' }, part); 
+                        } 
+                        return part; 
+                    }), 
+                    idx < arr.length - 1 ? ', ' : '' 
+                ); 
+            }); 
+        };
+        function generatePermutations(inputArray) { const result = []; const permute = (arr, l, r) => { if (l === r) result.push([...arr]); else { for (let i = l; i <= r; i++) { [arr[l], arr[i]] = [arr[i], arr[l]]; permute(arr, l + 1, r); [arr[l], arr[i]] = [arr[i], arr[l]]; } } }; if (inputArray && inputArray.length > 0) permute([...inputArray], 0, inputArray.length - 1); return result; }
+        const RUMER_EXPLORER_NUCLEOTIDES_DISPLAY = RUMER_EXPLORER_NUCLEOTIDES_INTERNAL.map(formatNucleotideDisplay);
+        function applyTransformToOrderInternal(orderArrayInternal, transformType) { return orderArrayInternal.map(nucleotide => { switch (transformType) { case 'E': return nucleotide; case 'R': if (nucleotide === 'U') return 'G'; if (nucleotide === 'G') return 'U'; if (nucleotide === 'C') return 'A'; if (nucleotide === 'A') return 'C'; return nucleotide; case 'R1': if (nucleotide === 'U') return 'G'; if (nucleotide === 'G') return 'U'; return nucleotide; case 'R2': if (nucleotide === 'C') return 'A'; if (nucleotide === 'A') return 'C'; return nucleotide; default: return nucleotide; } }); }
+        let RUMER_ORBITS_DATA_CACHE = null;
+        function generateRumerOrbitsDataInternal() { if (RUMER_ORBITS_DATA_CACHE) return RUMER_ORBITS_DATA_CACHE; const allPermutationArrays = generatePermutations([...RUMER_EXPLORER_NUCLEOTIDES_INTERNAL]); const allPermutationStrings = allPermutationArrays.map(p => p.join('')); const processedOrders = new Set(); let orbits = []; for (const p_str of allPermutationStrings) { if (processedOrders.has(p_str)) continue; const representativeOrderArray = p_str.split(''); const orbitMembers = { E: applyTransformToOrderInternal(representativeOrderArray, 'E').join(''), R1: applyTransformToOrderInternal(representativeOrderArray, 'R1').join(''), R2: applyTransformToOrderInternal(representativeOrderArray, 'R2').join(''), R: applyTransformToOrderInternal(representativeOrderArray, 'R').join('') }; Object.values(orbitMembers).forEach(memberOrder => processedOrders.add(memberOrder)); orbits.push({ representative: p_str, orders: orbitMembers, allMembersInOrbit: new Set(Object.values(orbitMembers)) }); } const targetOrderInternal = "CUGA"; orbits.sort((a, b) => { const a_has_target = a.allMembersInOrbit.has(targetOrderInternal); const b_has_target = b.allMembersInOrbit.has(targetOrderInternal); if (a_has_target && !b_has_target) return -1; if (!a_has_target && b_has_target) return 1; return a.representative.localeCompare(b.representative); }); if (orbits.length > 0 && orbits[0].allMembersInOrbit.has(targetOrderInternal)) { if (orbits[0].representative !== targetOrderInternal) { const newRepresentativeArray = targetOrderInternal.split(''); orbits[0].representative = targetOrderInternal; orbits[0].orders = { E: applyTransformToOrderInternal(newRepresentativeArray, 'E').join(''), R1: applyTransformToOrderInternal(newRepresentativeArray, 'R1').join(''), R2: applyTransformToOrderInternal(newRepresentativeArray, 'R2').join(''), R: applyTransformToOrderInternal(newRepresentativeArray, 'R').join('') }; orbits[0].allMembersInOrbit = new Set(Object.values(orbits[0].orders)); } } RUMER_ORBITS_DATA_CACHE = orbits; return orbits; }
+        
+        function getAminoAcidForRumerExplorer(codonInternal, codeTableDefinition) { 
+             return codeTableDefinition[codonInternal] || '?';
+        }
+
+        const getAminoAcidWeightForRumer = (aaSymbolOneLetter) => {
+            if (aaSymbolOneLetter === '*') return aminoAcidAtomicWeights['*']; 
+            if (aaSymbolOneLetter === '?') return aminoAcidAtomicWeights['?']; 
+            const threeLetterAA = oneToThreeLetterAA[aaSymbolOneLetter]; 
+            if (threeLetterAA && aminoAcidAtomicWeights[threeLetterAA] !== undefined) {
+                return aminoAcidAtomicWeights[threeLetterAA];
+            }
+            if (aminoAcidAtomicWeights[aaSymbolOneLetter] !== undefined) { 
+                 return aminoAcidAtomicWeights[aaSymbolOneLetter];
+            }
+            return 0; 
+        };
+
+        function calculateOctetIForCodeInternal(codeTableDefinition) { 
+            const newOctetI = new Set();
+            const firstTwoNucleotidesInternal = RUMER_EXPLORER_NUCLEOTIDES_INTERNAL.flatMap(n1 => RUMER_EXPLORER_NUCLEOTIDES_INTERNAL.map(n2 => n1 + n2));
+            firstTwoNucleotidesInternal.forEach(xyPairInternal => { 
+                let firstAminoAcid = null; let isFourFoldDegenerate = true;
+                for (let i = 0; i < RUMER_EXPLORER_THIRD_POS_NUCLEOTIDES_INTERNAL.length; i++) {
+                    const thirdNucInternal = RUMER_EXPLORER_THIRD_POS_NUCLEOTIDES_INTERNAL[i];
+                    const codonInternal = xyPairInternal + thirdNucInternal;
+                    const aminoAcid = getAminoAcidForRumerExplorer(codonInternal, codeTableDefinition); 
+                    if (aminoAcid === '*' || aminoAcid === '?') { isFourFoldDegenerate = false; break; }
+                    if (i === 0) { firstAminoAcid = aminoAcid; } 
+                    else if (aminoAcid !== firstAminoAcid) { isFourFoldDegenerate = false; break; }
+                }
+                if (isFourFoldDegenerate) { newOctetI.add(xyPairInternal); }
+            });
+            return newOctetI; 
+        }
+        function analyzeSymmetriesInternal(altCodeTableDefinition) { 
+            const altOctetI = calculateOctetIForCodeInternal(altCodeTableDefinition); 
+            const allXYPairsInternal = new Set(RUMER_EXPLORER_NUCLEOTIDES_INTERNAL.flatMap(n1 => RUMER_EXPLORER_NUCLEOTIDES_INTERNAL.map(n2 => n1 + n2)));
+            const altOctetII = new Set([...allXYPairsInternal].filter(pair => !altOctetI.has(pair)));
+            const analysis = { codeName: altCodeTableDefinition.name, octetIChanges: { becameNonOctetI: new Set(), becameOctetI: new Set(), stayedOctetI: new Set() }, rSymmetryViolations: [] }; 
+            STANDARD_OCTET_I_XY_PAIRS_INTERNAL.forEach(pairInternal => { if (!altOctetI.has(pairInternal)) { analysis.octetIChanges.becameNonOctetI.add(pairInternal); } else { analysis.octetIChanges.stayedOctetI.add(pairInternal); } }); 
+            altOctetI.forEach(pairInternal => { if (!STANDARD_OCTET_I_XY_PAIRS_INTERNAL.has(pairInternal)) { analysis.octetIChanges.becameOctetI.add(pairInternal); } }); 
+            altOctetI.forEach(pairOI_Internal => { const rTransformedPair_Internal = applyTransformToOrderInternal(pairOI_Internal.split(''), 'R').join(''); if (!altOctetII.has(rTransformedPair_Internal)) { analysis.rSymmetryViolations.push( `R(${formatOrderForDisplay(pairOI_Internal.split(''))} [OI]) = ${formatOrderForDisplay(rTransformedPair_Internal.split(''))} (expected in OII, but not found)` ); } }); 
+            altOctetII.forEach(pairOII_Internal => { const rTransformedPair_Internal = applyTransformToOrderInternal(pairOII_Internal.split(''), 'R').join(''); if (!altOctetI.has(rTransformedPair_Internal)) { analysis.rSymmetryViolations.push( `R(${formatOrderForDisplay(pairOII_Internal.split(''))} [OII]) = ${formatOrderForDisplay(rTransformedPair_Internal.split(''))} (expected in OI, but not found)` ); } }); 
+            return analysis; 
+        }
+        
+        function createEffectiveCodeTableForMatrixInstance(rumerCodeDefinition) {
+            const effectiveTable = {};
+            for (const codon in originalGeneticCodeTable) { 
+                 if (Object.hasOwnProperty.call(originalGeneticCodeTable, codon)) {
+                    const oneLetterAA = rumerCodeDefinition[codon]; 
+                    if (oneLetterAA) {
+                        effectiveTable[codon] = oneToThreeLetterAA[oneLetterAA] || oneLetterAA; 
+                    } else {
+                        effectiveTable[codon] = '?'; 
+                    }
+                 }
+            }
+            return effectiveTable;
+        }
+        
+        function calculateSynonymsForMatrixInstance(effectiveCodeTable) {
+            const aaToCodonCount = {};
+            const codonToSynonymCount = {};
+            Object.entries(effectiveCodeTable).forEach(([codon, aa]) => {
+                if (aa !== 'STOP' && aa !== '*') { 
+                    if (!aaToCodonCount[aa]) { aaToCodonCount[aa] = 0; }
+                    aaToCodonCount[aa]++;
+                }
+            });
+            Object.entries(effectiveCodeTable).forEach(([codon, aa]) => {
+                if (aa === 'STOP' || aa === '*') { codonToSynonymCount[codon] = 0; } 
+                else { codonToSynonymCount[codon] = aaToCodonCount[aa] || 0; }
+            });
+            return codonToSynonymCount;
+        }
+
+        const markovModels = {
+            simple: { name: 'Simple (Equal Prob.)', params: {} },
+            kimura: { name: 'Kimura (K2P)', params: { alpha: 0.2, beta: 0.1 } } // alpha: transition, beta: transversion
+        };
+
+        const getMutationProbability = (fromNuc, toNuc, modelName) => {
+            const model = markovModels[modelName];
+            if (!model) return 0;
+
+            if (modelName === 'simple') {
+                return 1 / 3;
+            }
+
+            if (modelName === 'kimura') {
+                const isFromPurine = purinesGlobal.has(fromNuc);
+                const isToPurine = purinesGlobal.has(toNuc);
+                const isTransition = isFromPurine === isToPurine;
+                return isTransition ? model.params.alpha : model.params.beta;
+            }
+            return 0;
+        };
+
+        const stabilityCache = new Map();
+        const calculateMarkovStability = (codonInternal, codeTable, modelName) => {
+            const cacheKey = `${codonInternal}-${codeTable.id}-${modelName}`;
+            if (stabilityCache.has(cacheKey)) {
+                return stabilityCache.get(cacheKey);
+            }
+
+            const oneLetterCodeTable = codeTable; 
+            const originalAA = oneLetterCodeTable[codonInternal] || '?';
+
+            let pSyn = 0, pNonSyn = 0, pStop = 0;
+            let totalProb = 0;
+            
+            for (let pos = 0; pos < 3; pos++) {
+                const originalNuc = codonInternal[pos];
+                for (const newNuc of baseNucleotidesInternalGlobal) {
+                    if (newNuc === originalNuc) continue;
+
+                    const newCodonArr = codonInternal.split('');
+                    newCodonArr[pos] = newNuc;
+                    const newCodon = newCodonArr.join('');
+                    
+                    const newAA = oneLetterCodeTable[newCodon] || '?';
+                    const prob = getMutationProbability(originalNuc, newNuc, modelName);
+                    
+                    if (newAA === originalAA) {
+                        pSyn += prob;
+                    } else if (newAA === '*' || newAA === 'STOP') {
+                        pStop += prob;
+                    } else {
+                        pNonSyn += prob;
+                    }
+                    totalProb += prob;
+                }
+            }
+            
+            if (totalProb > 0) {
+                pSyn /= totalProb;
+                pNonSyn /= totalProb;
+                pStop /= totalProb;
+            }
+
+            const result = { pSyn, pNonSyn, pStop };
+            stabilityCache.set(cacheKey, result);
+            return result;
+        };
+
+        // --- КОМПОНЕНТЫ ---
+
+        const SubRowItem = ({ codon, aminoAcid, defaultTextColor, showProperties, isBigCellDark, effectiveSynonymCounts, effectiveCodeTable, isSelected, onSelectToggle, markovModel, rumerActiveCodeDef }) => { 
+            let subRowStyle = { backgroundColor: 'transparent', color: defaultTextColor };
+            const codonDisplay = `${formatNucleotideDisplay(codon[0])}${formatNucleotideDisplay(codon[1])}${formatNucleotideDisplay(codon[2])}`;
+            let leftPartContent = codonDisplay; 
+            let rightPartContentChildren = [React.createElement('span', {key: "aa", className: 'info-part-aa'}, aminoAcid)];
+            let subRowClassNameAdd = ''; 
+
+            const currentAA = aminoAcid; 
+            const isStopCodon = currentAA === 'STOP' || currentAA === '*';
+
+            if (showProperties === 'aminoacids') { 
+                const aaBg = aminoAcidBackgroundsVibrant[currentAA] || aminoAcidBackgroundsVibrant[threeToOneLetterAA[currentAA]] || '#E0E0E0';
+                subRowStyle = { backgroundColor: aaBg, color: getTextColorForBackground(aaBg) }; 
+                if (codon === startCodon && currentAA === 'Met') subRowClassNameAdd = 'start-codon-highlight'; 
+                else if (isStopCodon) { 
+                    subRowClassNameAdd = 'stop-codon-highlight'; 
+                    if (!tinycolor(subRowStyle.backgroundColor).isDark()) subRowStyle.color = '#B91C1C'; 
+                }
+                const weight = aminoAcidAtomicWeights[currentAA] !== undefined ? aminoAcidAtomicWeights[currentAA] : (isStopCodon ? aminoAcidAtomicWeights['*'] : (aminoAcidAtomicWeights['?'] || 0));
+                
+                const codonDnaMass = dnaNucleotideResidueMasses[codon[0]] + dnaNucleotideResidueMasses[codon[1]] + dnaNucleotideResidueMasses[codon[2]] + WATER_MASS;
+                const codonRnaMass = rnaNucleotideResidueMasses[codon[0]] + rnaNucleotideResidueMasses[codon[1]] + rnaNucleotideResidueMasses[codon[2]] + WATER_MASS;
+
+                rightPartContentChildren = [
+                    React.createElement('span', {key: "aa", className: 'info-part-aa'}, currentAA),
+                    React.createElement('span', {key: "wt", className: 'info-part-details'}, `AA: ${weight}`),
+                    React.createElement('span', {key: "cwt_dna", className: 'info-part-details'}, `DNA: ${codonDnaMass}`),
+                    React.createElement('span', {key: "cwt_rna", className: 'info-part-details'}, `RNA: ${codonRnaMass}`)
+                ];
+            } 
+            else if (showProperties === 'synthetases') { 
+                const standardAACodonMeaning = originalGeneticCodeTable[codon];
+                const subtypeInfo = synthetaseSubtypeData[standardAACodonMeaning];
+                let synthBg = synthetaseSubtypeColors.default;
+                if (subtypeInfo && synthetaseSubtypeColors[subtypeInfo.subtype]) synthBg = synthetaseSubtypeColors[subtypeInfo.subtype];
+                subRowStyle = { backgroundColor: synthBg, color: getTextColorForBackground(synthBg) };
+                if (isStopCodon) subRowStyle.color = '#D32F2F';
+                let classDisplay = subtypeInfo ? subtypeInfo.class : 'N/A';
+                let subtypeDisplay = subtypeInfo ? subtypeInfo.subtype : 'N/A';
+                let infoText = `(${classDisplay}-${subtypeDisplay})`;
+                if (subtypeDisplay === 'N/A') infoText = `(${classDisplay})`;
+                rightPartContentChildren = [
+                     React.createElement('span', {key: "aa", className: 'info-part-aa'}, currentAA),
+                     React.createElement('span', {key: "subtype", className: 'info-part-details'}, infoText)
+                ];
+            } 
+            else if (showProperties === 'custom_trna') {
+                const trnaData = customTRNAAnticodons[codon];
+                let aaDisplay = '?', anticodonDisplayStr = '?', anticodonValToColor = '';
+                if (trnaData) {
+                    aaDisplay = trnaData.aa;
+                    anticodonDisplayStr = trnaData.ac;
+                    if (trnaData.ac && trnaData.ac !== "STOP" && trnaData.ac !== "N/A") {
+                        const firstAnticodon = trnaData.ac.split(',')[0].trim();
+                        if (firstAnticodon.includes('?')) anticodonValToColor = '?';
+                        else if (firstAnticodon.startsWith('U*')) anticodonValToColor = 'U';
+                        else anticodonValToColor = firstAnticodon[0];
+                    }
+                } else if (stopCodonsStandard.has(codon)) { 
+                    aaDisplay = 'STOP';
+                    anticodonDisplayStr = 'N/A';
+                }
+                subRowStyle.backgroundColor = anticodonFirstBaseColors[anticodonValToColor] || anticodonFirstBaseColors.default;
+                subRowStyle.color = getTextColorForBackground(subRowStyle.backgroundColor);
+                const aaColorForText = aminoAcidBackgroundsVibrant[aaDisplay] || aminoAcidBackgroundsVibrant[threeToOneLetterAA[aaDisplay]];
+                const aaTextColor = aaColorForText ? getTextColorForBackground(aaColorForText) : subRowStyle.color;
+                rightPartContentChildren = [
+                    React.createElement('span', {key:"trna_aa", className: 'info-part-aa', style: { color: aaTextColor, backgroundColor: aaColorForText || 'transparent', padding: '0 2px', borderRadius: '2px'} }, aaDisplay),
+                    React.createElement('span', {key:"trna_ac", className: 'info-part-anticodons', style: { color: subRowStyle.color }}, formatAnticodonDisplayJsx(anticodonDisplayStr))
+                ];
+            }
+            else if (showProperties === 'hydrophobicity') { 
+                const category = hydrophobicityCategories[currentAA] || hydrophobicityCategories[threeToOneLetterAA[currentAA]] || (isStopCodon ? 'STOP' : 'Neutral');
+                const hydroBg = hydrophobicityColors[category] || '#E0E0E0'; 
+                subRowStyle = { backgroundColor: hydroBg, color: getTextColorForBackground(hydroBg) }; 
+            } 
+            else if (showProperties === 'charge') { 
+                const category = chargeCategories[currentAA] || chargeCategories[threeToOneLetterAA[currentAA]] || (isStopCodon ? 'STOP' : 'Neutral');
+                const chargeBg = chargeColorsUpdated[category] || '#E0E0E0'; 
+                subRowStyle = { backgroundColor: chargeBg, color: getTextColorForBackground(chargeBg) }; 
+            } 
+            else if (showProperties === 'synonyms') { 
+                const count = effectiveSynonymCounts[codon] || 0;
+                const synonymCountColors = {1:'#E57373',2:'#FFB74D',3:'#FFF176',4:'#AED581',6:'#64B5F6',0:'#BDBDBD'}; 
+                const synBg = synonymCountColors[count] || '#E0E0E0'; 
+                subRowStyle = { backgroundColor: synBg, color: getTextColorForBackground(synBg) }; 
+                rightPartContentChildren = [React.createElement('span', {key:"syn_aa", className: 'info-part-aa'}, `${currentAA} (${count})`)]; 
+            }
+            else if (showProperties === 'au_cg_content') { 
+                let auCount = 0;
+                for (let i = 0; i < 3; i++) { if (codon[i] === 'A' || codon[i] === 'U') auCount++; } 
+                if (auCount >= 2) subRowStyle = { backgroundColor: contentRichnessColors.auRich.bg, color: contentRichnessColors.auRich.text }; 
+                else subRowStyle = { backgroundColor: contentRichnessColors.cgRich.bg, color: contentRichnessColors.cgRich.text }; 
+            }
+            else if (showProperties === 'pupy_code') { 
+                const puPyCode = getPuPyCodeForCodon(codon); 
+                const colorScheme = puPyCodeColors[puPyCode] || {bg: '#E0E0E0', text: '#000000'}; 
+                subRowStyle = { backgroundColor: colorScheme.bg, color: colorScheme.text }; 
+                leftPartContent = React.createElement(Fragment, null, codonDisplay, React.createElement('div', {style: {fontSize: '0.65em', lineHeight: '1', fontFamily: 'monospace'}}, puPyCode)); 
+                rightPartContentChildren = [React.createElement('span', {key: "aa", className: 'info-part-aa'}, currentAA)];
+            }
+            else if (showProperties === 'sidechain_mass') {
+                const fullMass = aminoAcidAtomicWeights[currentAA];
+                const category = getSideChainCategory(fullMass);
+                subRowStyle.backgroundColor = category ? category.color : '#e5e7eb';
+                subRowStyle.color = getTextColorForBackground(subRowStyle.backgroundColor);
+                const sideChainMass = aminoAcidSideChainWeights[currentAA];
+                rightPartContentChildren = [
+                    React.createElement('span', {key: "aa", className: 'info-part-aa'}, currentAA),
+                    React.createElement('span', {key: "wt", className: 'info-part-details'}, `(R: ${sideChainMass})`)
+                ];
+            }
+            else if (showProperties === 'markov_stability') {
+                const results = calculateMarkovStability(codon, rumerActiveCodeDef, markovModel);
+                
+                const riskFactor = Math.min(1, (results.pNonSyn * 0.7 + results.pStop * 1.5));
+                const stabilityColor = tinycolor.mix('#4ade80', '#f87171', riskFactor * 100);
+
+                subRowStyle.backgroundColor = stabilityColor.toHexString();
+                subRowStyle.color = getTextColorForBackground(subRowStyle.backgroundColor);
+                
+                rightPartContentChildren = [
+                    React.createElement('span', {key: "aa", className: 'info-part-aa'}, currentAA),
+                    React.createElement('span', {key: "markov_syn", className: 'info-part-details'}, `Syn: ${results.pSyn.toFixed(3)}`),
+                    React.createElement('span', {key: "markov_non", className: 'info-part-details'}, `Non: ${results.pNonSyn.toFixed(3)}`),
+                    React.createElement('span', {key: "markov_stp", className: 'info-part-details'}, `Stp: ${results.pStop.toFixed(3)}`),
+                ];
+            }
+            else { 
+                let specialTextColor = defaultTextColor; 
+                if (codon === startCodon && currentAA === 'Met') specialTextColor = '#059669'; 
+                else if (isStopCodon) specialTextColor = '#B91C1C'; 
+                subRowStyle.color = specialTextColor; 
+            }
+            
+            const finalSubRowClassName = subRowStyle.backgroundColor === 'transparent' ? 
+                                 `transparent-bg ${isBigCellDark ? 'sub-row-text-light' : 'sub-row-text-dark'} ${subRowClassNameAdd}` : 
+                                 subRowClassNameAdd;
+            
+            let finalSubRowOuterClassName = `sub-row-item ${finalSubRowClassName}`;
+            if (isSelected) {
+                finalSubRowOuterClassName += ' selected-for-summing';
+            }
+            
+            return React.createElement('div', { 
+                className: finalSubRowOuterClassName, 
+                style: { backgroundColor: subRowStyle.backgroundColor, cursor: onSelectToggle ? 'pointer' : 'default' },
+                onClick: onSelectToggle ? () => onSelectToggle(codon) : undefined
+            }, React.createElement('div', { className: `sub-row-codon-part`, style: { color: subRowStyle.color } }, leftPartContent ), React.createElement('div', { className: 'sub-row-info-part', style: { color: subRowStyle.color } }, rightPartContentChildren ) );
+        };
+
+        const MatrixCell = ({ firstInternal, secondInternal, orderVertical, orderHorizontal, orderThird, showProperties, rumerHoverPair, onRumerCellHover, effectiveCodeTable, effectiveSynonymCounts, currentRumerCodeDef, selectedCodons, onCodonSelectToggle, markovModel }) => {
+            let bigCellBgColor = '#FFFFFF'; 
+            if (showProperties === 'strength') { bigCellBgColor = getCellColorStrength(firstInternal, secondInternal, orderVertical, orderHorizontal); } 
+            else if (showProperties === 'type') { bigCellBgColor = getCellColorType(firstInternal, secondInternal); } 
+            else if (showProperties === 'rumer') { 
+                const currentOctetI = currentRumerCodeDef ? calculateOctetIForCodeInternal(currentRumerCodeDef) : STANDARD_OCTET_I_XY_PAIRS_INTERNAL;
+                const pair = firstInternal + secondInternal;
+                bigCellBgColor = currentOctetI.has(pair) ? baseColorsGlobal.rumer.octetI : baseColorsGlobal.rumer.octetII;
+            } 
+            else if (showProperties === 'amino_keto_type') { const type1 = aminoKetoTypes[firstInternal]; const type2 = aminoKetoTypes[secondInternal]; const cellTypeKey = `${type1}-${type2}`; const colorScheme = aminoKetoCellColors[cellTypeKey] || {bg: '#E0E0E0', text: '#000000'}; bigCellBgColor = colorScheme.bg; }
+            
+            const defaultSubRowTextColor = getTextColorForBackground(bigCellBgColor);
+            const isBigCellDark = tinycolor(bigCellBgColor).isDark();
+            const cellKey = `${formatNucleotideDisplay(firstInternal)}${formatNucleotideDisplay(secondInternal)}`;
+            let currentCellClassName = `border border-gray-500 matrix-big-cell`;
+            if (showProperties === 'rumer' && rumerHoverPair && (rumerHoverPair.original === cellKey || rumerHoverPair.partner === cellKey)) { currentCellClassName += ' highlight-rumer-hover'; }
+            
+            return React.createElement('td', { className: currentCellClassName, style: { width: '8.5rem', height: '8.5rem', backgroundColor: bigCellBgColor }, onMouseEnter: () => onRumerCellHover && onRumerCellHover(cellKey, true), onMouseLeave: () => onRumerCellHover && onRumerCellHover(cellKey, false) }, 
+                React.createElement('div', {className: `sub-row-grid`}, 
+                    orderThird.map(thirdNucInternal => { 
+                        const codon = `${firstInternal}${secondInternal}${thirdNucInternal}`;
+                        const aminoAcid = effectiveCodeTable[codon] || '?'; 
+                        return React.createElement(SubRowItem, { 
+                            key: thirdNucInternal, 
+                            codon: codon, 
+                            aminoAcid: aminoAcid, 
+                            defaultTextColor: defaultSubRowTextColor, 
+                            isBigCellDark: isBigCellDark, 
+                            showProperties: showProperties, 
+                            effectiveSynonymCounts: effectiveSynonymCounts,
+                            effectiveCodeTable: effectiveCodeTable,
+                            isSelected: selectedCodons.has(codon), 
+                            onSelectToggle: onCodonSelectToggle,
+                            markovModel: markovModel, 
+                            rumerActiveCodeDef: currentRumerCodeDef
+                        });
+                    })
+                ) 
+            );
+        };
+
+        const MatrixTable = ({ orderVertical, orderHorizontal, orderThird, showProperties, rumerHoverPair, onRumerCellHover, effectiveCodeTable, effectiveSynonymCounts, currentRumerCodeDef, selectedCodons, onCodonSelectToggle, markovModel }) => { 
+            const headerSize = '3.5rem'; const cellSize = '8.5rem'; 
+            return React.createElement('div', { className: "matrix-table-wrapper" }, 
+                React.createElement('div', { className: "inline-block border-2 border-gray-700 matrix-table-container" }, 
+                    React.createElement('table', { className: "border-collapse" }, 
+                        React.createElement('thead', {}, React.createElement('tr', {}, 
+                            React.createElement('th', { className: "border border-gray-500 matrix-header-cell", style: { width: headerSize, height: headerSize} }), 
+                            orderHorizontal.map(nucInternal => React.createElement('th', { key: nucInternal, className: "border border-gray-500 matrix-header-cell font-mono text-2xl", style: { width: cellSize, height: headerSize } }, formatNucleotideDisplay(nucInternal))) 
+                        )), 
+                        React.createElement('tbody', {}, orderVertical.map(firstInternal => 
+                            React.createElement('tr', { key: firstInternal }, 
+                                React.createElement('th', { className: "border border-gray-500 matrix-header-cell font-mono text-2xl", style: { width: headerSize, height: cellSize } }, formatNucleotideDisplay(firstInternal)), 
+                                orderHorizontal.map(secondInternal => React.createElement(MatrixCell, { 
+                                    key: `${firstInternal}${secondInternal}`, firstInternal, secondInternal, 
+                                    orderVertical, orderHorizontal, orderThird, 
+                                    showProperties, rumerHoverPair, onRumerCellHover,
+                                    effectiveCodeTable, effectiveSynonymCounts, currentRumerCodeDef,
+                                    selectedCodons, onCodonSelectToggle,
+                                    markovModel: markovModel
+                                })) 
+                            )) 
+                        ) 
+                    )
+                )
+            ); 
+        };
+        
+        const getCellColorStrength = (first, second, orderArrVertical, orderArrHorizontal) => { const firstStrength = nucleotidePropsGlobal[first].strength; const secondStrength = nucleotidePropsGlobal[second].strength; if (firstStrength === 'strong' && secondStrength === 'strong') return baseColorsGlobal.strength.ss; if (firstStrength === 'weak' && secondStrength === 'weak') return baseColorsGlobal.strength.ww; if (firstStrength !== secondStrength) { const firstIndex = orderArrVertical.indexOf(first); const secondIndex = orderArrHorizontal.indexOf(second); return (firstIndex + secondIndex) % 2 === 0 ? baseColorsGlobal.strength.mixedEven : baseColorsGlobal.strength.mixedOdd; } return baseColorsGlobal.strength.default; };
+        const getCellColorType = (first, second) => { return nucleotidePropsGlobal[first].type === nucleotidePropsGlobal[second].type ? (nucleotidePropsGlobal[first].type === 'purine' ? baseColorsGlobal.type.pp : baseColorsGlobal.type.yy) : (nucleotidePropsGlobal[first].type === 'purine' ? baseColorsGlobal.type.py : baseColorsGlobal.type.yp); };
+        
+        const OrbitBasedOrderSelectorPanel = ({ panelTitle, orbitsData, currentOrderArray, onOrderSelect }) => {
+            if (!orbitsData || orbitsData.length === 0) {
+                return React.createElement('div', { className: "text-xs p-2" }, 'Loading orbits...');
+            }
+
+            return React.createElement('div', { className: "mb-2" },
+                panelTitle && React.createElement('h4', { className: "text-xs font-semibold mb-1" }, panelTitle),
+                orbitsData.map((orbit, orbitIndex) => (
+                    React.createElement('div', {
+                        key: `orbit-sel-${orbitIndex}`,
+                        className: "mb-2 p-1.5 border border-gray-400 rounded-md bg-gray-50" 
+                    },
+                        React.createElement('div', { className: "text-xs text-center text-gray-600 mb-1 font-mono" },
+                             `Orbit ${orbitIndex + 1} (E: ${orbit.orders.E ? formatOrderForDisplay(orbit.orders.E.split('')) : '???'})`
+                        ),
+                        React.createElement('div', { className: "grid grid-cols-2 gap-1" },
+                            Object.entries(orbit.orders).map(([transformKey, orderInternalStr]) => {
+                                if (!orderInternalStr) return null; 
+                                const orderInternalArray = orderInternalStr.split('');
+                                const orderDisplayStr = formatOrderForDisplay(orderInternalArray);
+                                const isActive = currentOrderArray.join('') === orderInternalStr;
+
+                                return React.createElement('div', {
+                                    key: `${orbitIndex}-${transformKey}`,
+                                    className: `order-part p-1 text-center font-mono text-xs rounded ${isActive ? 'active' : 'hover:bg-gray-200'}`,
+                                    onClick: () => onOrderSelect(orderInternalArray),
+                                    title: `Set order ${orderDisplayStr} (${transformKey})`
+                                }, `${transformKey}: ${orderDisplayStr}`);
+                            })
+                        )
+                    )
+                ))
+            );
+        };
+
+        const AxisOrderSelect = ({ title, allOrders, currentOrderArray, onOrderSelect }) => { const currentOrderString = currentOrderArray.join(''); return React.createElement('div', null, React.createElement('h4', {className: "text-xs font-semibold mb-1"}, title), React.createElement('select', { className: "axis-order-select", value: currentOrderString, onChange: (e) => { const selectedOrder = allOrders.find(o => o.internal.join('') === e.target.value); if (selectedOrder) { onOrderSelect(selectedOrder.internal); } } }, allOrders.map(order => React.createElement('option', { key: order.internal.join(''), value: order.internal.join('') }, order.display)) ) ); };
+        const PropertySelector = ({ modes, currentMode, onModeChange }) => { return React.createElement('div', { className: 'matrix-instance-properties-panel' }, modes.map(mode => React.createElement('label', { key: mode.value, className: 'flex items-center cursor-pointer p-1 text-xs mb-1' }, React.createElement('input', { type: 'radio', name: 'colorProperty', value: mode.value, checked: currentMode === mode.value, onChange: e => onModeChange(e.target.value), className: 'mr-1.5' }), mode.label)) ); };
+        
+        const LegendDisplay = ({ showProperties, currentRumerCodeName, markovModel, onMarkovModelChange }) => { 
+            let legendItems = []; let explanation = ""; const textColorGetter = getTextColorForBackground; 
+            if (showProperties === 'rumer') { 
+                legendItems = [  
+                    {bg: baseColorsGlobal.rumer.octetI, text: baseColorsGlobal.rumer.legend.octetI, tc: textColorGetter(baseColorsGlobal.rumer.octetI)}, 
+                    {bg: baseColorsGlobal.rumer.octetII, text: baseColorsGlobal.rumer.legend.octetII, tc: textColorGetter(baseColorsGlobal.rumer.octetII)} 
+                ]; 
+                explanation = `Rumer Octet highlighting for code: ${currentRumerCodeName || 'Standard'}. Octet I: 8 boxes where all 4 third position variations code for one AA. Octet II: Remaining 8 boxes. Hover over a cell to highlight its R-partner (for Standard Code).`;
+            }  
+            else if (showProperties === 'strength') { 
+                legendItems = [ 
+                    {bg: baseColorsGlobal.strength.ss, text: baseColorsGlobal.strength.legend.ss, tc: textColorGetter(baseColorsGlobal.strength.ss)}, 
+                    {bg: baseColorsGlobal.strength.ww, text: baseColorsGlobal.strength.legend.ww, tc: textColorGetter(baseColorsGlobal.strength.ww)},
+                    {bg: baseColorsGlobal.strength.mixedEven, text: baseColorsGlobal.strength.legend.mixedEven, tc: textColorGetter(baseColorsGlobal.strength.mixedEven)}, 
+                    {bg: baseColorsGlobal.strength.mixedOdd, text: baseColorsGlobal.strength.legend.mixedOdd, tc: textColorGetter(baseColorsGlobal.strength.mixedOdd)} 
+                ]; 
+                explanation = "Cell coloring by H-bond strength of 1st & 2nd codon positions (S: G/C, W: A/U). Mixed S-W pairs are colored by parity of index sum in current axis order.";
+            } 
+            else if (showProperties === 'type') { 
+                legendItems = [ 
+                    {bg: baseColorsGlobal.type.pp, text: baseColorsGlobal.type.legend.pp, tc: textColorGetter(baseColorsGlobal.type.pp)}, 
+                    {bg: baseColorsGlobal.type.yy, text: baseColorsGlobal.type.legend.yy, tc: textColorGetter(baseColorsGlobal.type.yy)}, 
+                    {bg: baseColorsGlobal.type.py, text: baseColorsGlobal.type.legend.py, tc: textColorGetter(baseColorsGlobal.type.py)}, 
+                    {bg: baseColorsGlobal.type.yp, text: baseColorsGlobal.type.legend.yp, tc: textColorGetter(baseColorsGlobal.type.yp)} 
+                ]; 
+                explanation = "Cell coloring by type of 1st & 2nd codon positions (Purine: A/G, Pyrimidine: U/C).";
+            } 
+            else if (showProperties === 'aminoacids') { 
+                legendItems = [ {bg: '#6EE7B7', text: 'Start (Met)', tc: textColorGetter('#6EE7B7')}, {bg: '#FDA4AF', text: 'Stop', tc: textColorGetter('#FDA4AF')} ]; 
+                explanation = `Codon coloring by Amino Acid (code: ${currentRumerCodeName || 'Standard'}). Unique background for each AA. Start/Stop codons are specially highlighted. Atomic weights (wt) in parentheses.`;
+            } 
+            else if (showProperties === 'custom_trna') {
+                legendItems = [
+                    {bg: anticodonFirstBaseColors['G'], text: 'Anticodon starts with G', tc: getTextColorForBackground(anticodonFirstBaseColors['G'])},
+                    {bg: anticodonFirstBaseColors['U'], text: 'Anticodon starts with U (or U*)', tc: getTextColorForBackground(anticodonFirstBaseColors['U'])},
+                    {bg: anticodonFirstBaseColors['C'], text: 'Anticodon starts with C', tc: getTextColorForBackground(anticodonFirstBaseColors['C'])},
+                    {bg: anticodonFirstBaseColors['A'], text: 'Anticodon starts with A', tc: getTextColorForBackground(anticodonFirstBaseColors['A'])},
+                    {bg: anticodonFirstBaseColors['default'], text: 'Anticodon with ? / N/A / Other', tc: getTextColorForBackground(anticodonFirstBaseColors['default'])},
+                    {bg: 'transparent', text: React.createElement(Fragment, null, 'U*/C*', React.createElement('span', {className: 'anticodon-modified-char'}, '*'), ' : Modified U/C'), tc: '#D32F2F'},
+                    {bg: 'transparent', text: 'AUG: Met (CAU,CAU) - Initiator tRNA', tc: '#333'} 
+                ];
+                explanation = `Displays Amino Acid (AA) and corresponding tRNA anticodon(s) from the custom dataset. Background color of codon item indicates the first base of its anticodon (U* treated as U). '?' in anticodon indicates uncertainty in the provided data.`;
+            }
+            else if (showProperties === 'au_cg_content') { 
+                legendItems = [ 
+                    {bg: contentRichnessColors.auRich.bg, text: 'A+U Rich (>=2 A/U)', tc: contentRichnessColors.auRich.text}, 
+                    {bg: contentRichnessColors.cgRich.bg, text: 'C+G Rich (>=2 C/G)', tc: contentRichnessColors.cgRich.text}
+                ]; 
+                explanation = "Codon coloring based on content of >=2 A/U or >=2 C/G bases."; 
+            }
+            else if (showProperties === 'pupy_code') { 
+                legendItems = Object.entries(puPyCodeColors).map(([code, colors]) => ({ bg: colors.bg, text: `Pu/Py: ${code}`, tc: colors.text })); 
+                explanation = "Codon coloring by their 3-position Purine/Pyrimidine (Pu/Py) code (0=Purine, 1=Pyrimidine). Each of the 8 Pu/Py codes has a unique color.";
+            }
+            else if (showProperties === 'amino_keto_type') { 
+                legendItems = Object.entries(aminoKetoCellColors).map(([typeKey, color]) => ({ bg: color.bg, text: color.legend, tc: color.text })); 
+                explanation = "4x4 cell coloring by Amino/Keto type of 1st & 2nd positions (A,C - Amino; U,G - Keto). Rumer transformations (R, R1, R2) preserve these types.";
+            } 
+            else if (showProperties === 'synthetases') { 
+                const subtypeToAAs = {};
+                for (const aa in synthetaseSubtypeData) {
+                    const info = synthetaseSubtypeData[aa];
+                    if (info.subtype) {
+                        if (!subtypeToAAs[info.subtype]) {
+                            subtypeToAAs[info.subtype] = [];
+                        }
+                        if (aa !== 'STOP') subtypeToAAs[info.subtype].push(aa);
+                    }
+                }
+                
+                legendItems = Object.entries(synthetaseSubtypeColors)
+                    .filter(([subtype]) => subtype !== 'default')
+                    .sort(([subtypeA], [subtypeB]) => {
+                        const classA = subtypeA.startsWith('II') ? 'II' : 'I';
+                        const classB = subtypeB.startsWith('II') ? 'II' : 'I';
+                        if (classA !== classB) return classA.localeCompare(classB);
+                        return subtypeA.localeCompare(subtypeB);
+                    })
+                    .map(([subtype, color]) => {
+                        const aas = subtypeToAAs[subtype] ? `(${subtypeToAAs[subtype].join(', ')})` : '';
+                        return {
+                            bg: color,
+                            text: `Subtype ${subtype} ${aas}`,
+                            tc: getTextColorForBackground(color)
+                        };
+                    });
+
+                explanation = `Codon coloring by aminoacyl-tRNA synthetase subtype (based on Standard Code). Current selected code in Analyzer: ${currentRumerCodeName || 'Standard'}.`;
+            } 
+            else if (showProperties === 'sidechain_mass') {
+                legendItems = Object.values(sideChainMassCategories).map(cat => ({
+                    bg: cat.color,
+                    text: cat.label,
+                    tc: getTextColorForBackground(cat.color)
+                }));
+                explanation = React.createElement('div', null,
+                    React.createElement('p', null, "The molecular mass of an amino acid is determined by its common backbone and a unique side chain (R-group). The difference in mass between amino acids is due to these R-groups."),
+                    React.createElement('p', {className: 'font-semibold mt-2'}, "Side Chain (R-group) Masses:"),
+                    React.createElement('ul', {className: 'grid grid-cols-2 gap-x-2'}, 
+                        Object.entries(aminoAcidSideChainWeights).filter(([aa]) => aa !== 'STOP' && aa !== '?' && aa !== '*').sort((a,b) => a[1] - b[1]).map(([aa, mass]) => React.createElement('li', {key: aa}, `${aa}: ${mass}`))
+                    )
+                );
+            }
+            else if (showProperties === 'markov_stability') {
+                const gradientStart = '#4ade80';
+                const gradientEnd = '#f87171';
+                legendItems = [
+                    { bg: gradientStart, text: 'High Synonymous Prob. (Stable)', tc: textColorGetter(gradientStart) },
+                    { bg: tinycolor.mix(gradientStart, gradientEnd, 50).toHexString(), text: 'Medium Risk', tc: textColorGetter(tinycolor.mix(gradientStart, gradientEnd, 50).toHexString()) },
+                    { bg: gradientEnd, text: 'High Non-Syn/STOP Prob. (Risky)', tc: textColorGetter(gradientEnd) },
+                ];
+                
+                const markovControls = React.createElement('div', { className: 'mt-2 pt-2 border-t' },
+                    React.createElement('strong', { className: 'text-xs' }, 'Markov Model:'),
+                    React.createElement('div', {className: 'text-xs'},
+                        Object.entries(markovModels).map(([key, model]) => 
+                            React.createElement('label', { key: key, className: 'flex items-center cursor-pointer p-0.5'},
+                                React.createElement('input', { 
+                                    type: 'radio', 
+                                    name: 'markovModelLegend', 
+                                    value: key, 
+                                    checked: markovModel === key, 
+                                    onChange: e => onMarkovModelChange(e.target.value), 
+                                    className: 'mr-1.5' 
+                                }),
+                                model.name
+                            )
+                        )
+                    )
+                );
+
+                explanation = React.createElement(Fragment, null,
+                    `Codon coloring by evolutionary stability, calculated using a Markov model. Probabilities of mutation to Synonymous (Syn), Non-synonymous (Non), or STOP codons are shown. Current model: ${markovModels[markovModel]?.name || 'Unknown'}.`,
+                    markovControls
+                );
+            }
+            else if (showProperties === 'hydrophobicity') { 
+                legendItems = Object.entries(hydrophobicityColors).map(([key, color]) => ({ bg: color, text: key, tc: textColorGetter(color) })); 
+                explanation = `Codon coloring by hydrophobicity category of the encoded AA (code: ${currentRumerCodeName || 'Standard'}).`;
+            } 
+            else if (showProperties === 'charge') { 
+                legendItems = Object.entries(chargeColorsUpdated).map(([key, color]) => ({ bg: color, text: key, tc: textColorGetter(color) })); 
+                explanation = `Codon coloring by charge category of the encoded AA at neutral pH (code: ${currentRumerCodeName || 'Standard'}).`;
+            } 
+            else if (showProperties === 'synonyms') { 
+                const synonymCountColors = {1:'#E57373',2:'#FFB74D',3:'#FFF176',4:'#AED581',6:'#64B5F6',0:'#BDBDBD'}; 
+                legendItems = Object.entries(synonymCountColors).map(([key, color]) => ({ bg: color, text: `${key} synonym${key == 1 ? '' : 's'}`, tc: textColorGetter(color)  })); 
+                explanation = `Codon coloring by number of synonymous codons (code: ${currentRumerCodeName || 'Standard'}).`;
+            }
+
+            const aminoAcidSubLegend = showProperties === 'aminoacids' ? React.createElement(React.Fragment, null, React.createElement('h4', {className: "col-span-full text-center font-semibold mt-2 mb-0.5 text-xs"}, "Amino Acid Backgrounds & Weights:"), Object.entries(aminoAcidBackgroundsVibrant).map(([aaShort, bgColor]) => ({ aaShort, bgColor, aaName: aminoAcidFullName[aaShort] || aaShort, aaWeight: aminoAcidAtomicWeights[aaShort] })).sort((a, b) => { const weightA = a.aaWeight === null || a.aaWeight === undefined || a.aaShort === 'STOP' || a.aaShort === '?' ? Infinity : a.aaWeight; const weightB = b.aaWeight === null || b.aaWeight === undefined || a.aaShort === 'STOP' || b.aaShort === '?' ? Infinity : b.aaWeight; if (weightA === Infinity && weightB === Infinity) return a.aaShort.localeCompare(b.aaShort); if (weightA === Infinity) return 1; if (weightB === Infinity) return -1; return weightA - weightB; }).map(item => { const weightText = (item.aaWeight !== undefined && item.aaWeight !== null && item.aaShort !== 'STOP' && item.aaShort !== '?') ? ` (wt: ${item.aaWeight})` : ( (item.aaShort === 'STOP' || item.aaShort === '*') ? ` (wt: ${aminoAcidAtomicWeights['*']})`: '' ); return React.createElement('div', { key: item.aaShort, className: "col-span-1 flex items-center text-xs"}, React.createElement('div', {className: "w-3 h-3 mr-1.5 border shrink-0", style: {backgroundColor: item.bgColor }}), React.createElement('span', {}, `${item.aaName} (${item.aaShort})${weightText}`) ); }) ) : null;
+            
+            if (!legendItems.length && !aminoAcidSubLegend && !explanation) return null;
+            
+            return React.createElement('div', { className: "mt-4 text-sm" }, 
+                React.createElement('h3', { className: "text-base font-semibold mb-1 text-center" }, 'Legend:'), 
+                 legendItems.length > 0 && React.createElement('div', { className: `grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-x-3 gap-y-1.5 max-w-3xl mx-auto` }, 
+                    legendItems.map(item => React.createElement('div', { key: item.text.toString(), className: "flex items-center text-xs" }, 
+                        React.createElement('div', { className: `w-3 h-3 mr-1.5 border border-gray-400 shrink-0`, style: {backgroundColor: item.bg } }), 
+                        React.createElement('span', { style: { backgroundColor: item.bg === 'transparent' ? 'rgba(0,0,0,0)' : item.bg, color: item.tc || textColorGetter(item.bg), padding: '1px 3px', borderRadius: '3px', display: 'inline-block', lineHeight: '1.2'} }, item.text) 
+                    )) 
+                ), 
+                aminoAcidSubLegend, 
+                explanation && React.createElement('div', {className: 'legend-explanation'}, React.createElement('strong', null, 'Mode Explanation: '), explanation) 
+            );
+        };
+        
+        const MiniMatrix = ({ 
+            axisOrderInternalArray, titleSuffix, activeGeneticCodeDef, analysisCache, 
+            highlightedActiveNucs, highlightedTempNucs, 
+            rumerHoveredCellPair, currentMatrixOrderKey, onCellHover,
+            displayMetric 
+        }) => {
+            const currentCodeOctetI = useMemo(() => calculateOctetIForCodeInternal(activeGeneticCodeDef), [activeGeneticCodeDef]);
+
+            const { xyBoxValues, rowSums, colSums, grandTotal } = useMemo(() => {
+                const values = {};
+                const rSums = [0, 0, 0, 0];
+                const cSums = [0, 0, 0, 0];
+                let gt = 0;
+
+                if (axisOrderInternalArray && axisOrderInternalArray.length === 4) {
+                    axisOrderInternalArray.forEach((rowNucInternal, rowIndex) => {
+                        axisOrderInternalArray.forEach((colNucInternal, colIndex) => {
+                            const xyPairInternal = rowNucInternal + colNucInternal;
+                            let currentBoxValue = 0;
+                            
+                            if (displayMetric === 'mass' && activeGeneticCodeDef) {
+                                RUMER_EXPLORER_THIRD_POS_NUCLEOTIDES_INTERNAL.forEach(thirdNucInternal => {
+                                    const codonInternal = xyPairInternal + thirdNucInternal;
+                                    const aminoAcidOneLetter = getAminoAcidForRumerExplorer(codonInternal, activeGeneticCodeDef);
+                                    currentBoxValue += getAminoAcidWeightForRumer(aminoAcidOneLetter);
+                                });
+                            } else if (displayMetric === 'hbonds') {
+                                const hx = nucleotideHBonds[rowNucInternal] || 0;
+                                const hy = nucleotideHBonds[colNucInternal] || 0;
+                                const h_third_sum = 10;
+                                currentBoxValue = 4 * (hx + hy) + h_third_sum;
+                            } else { 
+                                currentBoxValue = '';
+                            }
+
+                            values[xyPairInternal] = currentBoxValue;
+                            if (typeof currentBoxValue === 'number') {
+                                rSums[rowIndex] += currentBoxValue;
+                                cSums[colIndex] += currentBoxValue;
+                                gt += currentBoxValue;
+                            }
+                        });
+                    });
+                }
+                return { xyBoxValues: values, rowSums: rSums, colSums: cSums, grandTotal: gt };
+            }, [axisOrderInternalArray, activeGeneticCodeDef, displayMetric]);
+
+
+            const getNucleotideTitleClass = (nucInternal) => { let className = 'nucleotide-in-title'; if (highlightedTempNucs && highlightedTempNucs.has(nucInternal)) className += ' highlighted-temp'; else if (highlightedActiveNucs && highlightedActiveNucs.has(nucInternal)) className += ' highlighted-active'; return className; };
+            const getLabelCellClass = (nucInternal) => { let className = 'mini-matrix-label-cell'; if (highlightedTempNucs && highlightedTempNucs.has(nucInternal)) className += ' highlighted-temp'; else if (highlightedActiveNucs && highlightedActiveNucs.has(nucInternal)) className += ' highlighted-active'; return className; }
+
+            if (!axisOrderInternalArray || axisOrderInternalArray.length !== 4) {
+                 return React.createElement('div', { className: 'mini-matrix-overall-container' }, 'Error: Invalid axis order');
+            }
+            
+            return (
+                React.createElement('div', { className: 'mini-matrix-overall-container', 'data-matrix-base-order': axisOrderInternalArray.join('') },
+                    React.createElement('div', { className: 'matrix-title' }, axisOrderInternalArray.map(nucInternal => React.createElement('span', { key: nucInternal, className: getNucleotideTitleClass(nucInternal), 'data-nucleotide-val': formatNucleotideDisplay(nucInternal) }, formatNucleotideDisplay(nucInternal)) ).reduce((prev, curr) => prev === null ? [curr] : [...prev, curr], null), ` (${titleSuffix})`),
+                    React.createElement('div', { className: 'mini-matrix-grid-wrapper' },
+                        React.createElement('div', { className: 'mini-matrix-corner-cell' }),
+                        axisOrderInternalArray.map(nucInternal => React.createElement('div', { key: `top-${nucInternal}`, className: getLabelCellClass(nucInternal), 'data-nucleotide-val': formatNucleotideDisplay(nucInternal) }, formatNucleotideDisplay(nucInternal))),
+                        React.createElement('div', { className: 'mini-matrix-corner-cell sum-header-corner' }), 
+
+                        ...axisOrderInternalArray.flatMap((rowNucInternal, rowIndex) => [
+                            React.createElement('div', { key: `left-${rowNucInternal}`, className: getLabelCellClass(rowNucInternal), 'data-nucleotide-val': formatNucleotideDisplay(rowNucInternal) }, formatNucleotideDisplay(rowNucInternal)),
+                            ...axisOrderInternalArray.map(colNucInternal => {
+                                const xyPairInternal = rowNucInternal + colNucInternal;
+                                let cellClasses = 'mini-matrix-cell';
+                                const isOctetI = currentCodeOctetI.has(xyPairInternal);
+                                if (isOctetI) cellClasses += ' octet-I'; else cellClasses += ' octet-II';
+
+                                if (activeGeneticCodeDef.id !== 'transl_table_1' && analysisCache) { 
+                                    if (analysisCache.octetIChanges.becameNonOctetI.has(xyPairInternal)) { cellClasses += ' was-octetI-now-II status-changed'; } 
+                                    if (analysisCache.octetIChanges.becameOctetI.has(xyPairInternal)) { cellClasses += ' was-octetII-now-I status-changed'; }
+                                }
+                                if (rumerHoveredCellPair && rumerHoveredCellPair.matrixOrderKey === currentMatrixOrderKey) { 
+                                    if (xyPairInternal === rumerHoveredCellPair.originalCellXY || xyPairInternal === rumerHoveredCellPair.transformedCellXY) { cellClasses += ' highlight-partner-transform'; } 
+                                }
+
+                                const value = xyBoxValues[xyPairInternal];
+                                
+                                let textColorClass = '';
+                                if (cellClasses.includes('was-octetI-now-II')) textColorClass = 'text-black';
+                                else if (cellClasses.includes('was-octetII-now-I')) textColorClass = 'text-white';
+                                else if (isOctetI) textColorClass = 'text-white';
+                                else textColorClass = 'text-black';
+
+
+                                return React.createElement('div', {
+                                    key: xyPairInternal,
+                                    className: cellClasses,
+                                    'data-xy-pair': xyPairInternal,
+                                    onMouseEnter: () => onCellHover(currentMatrixOrderKey, xyPairInternal, true),
+                                    onMouseLeave: () => onCellHover(null, null, false)
+                                }, React.createElement('span', { className: `mass-in-cell ${textColorClass}` }, value));
+                            }),
+                            React.createElement('div', { key: `row-sum-${rowIndex}`, className: 'sum-cell' }, displayMetric !== 'none' ? rowSums[rowIndex] : '')
+                        ]),
+
+                        React.createElement('div', { className: 'mini-matrix-corner-cell sum-header-corner' }), 
+                        ...colSums.map((sum, colIndex) => React.createElement('div', { key: `col-sum-${colIndex}`, className: 'sum-cell' }, displayMetric !== 'none' ? sum : '')),
+                        React.createElement('div', { key: 'grand-total', className: 'sum-cell grand-total-cell' }, displayMetric !== 'none' ? grandTotal : '')
+                    )
+                )
+            );
+        };
+
+        const FormulaPart = React.memo(({ text, nucleotidesInternal, onHover, isActiveFormula }) => {
+            const handleMouseEnter = useCallback(() => { if (!isActiveFormula && nucleotidesInternal && onHover) { onHover(nucleotidesInternal.split(','), true); } }, [isActiveFormula, nucleotidesInternal, onHover]);
+            const handleMouseLeave = useCallback(() => { if (!isActiveFormula && nucleotidesInternal && onHover) { onHover([], false); } }, [isActiveFormula, nucleotidesInternal, onHover]);
+            return React.createElement('span', { className: "transform-part", onMouseEnter: handleMouseEnter, onMouseLeave: handleMouseLeave, dangerouslySetInnerHTML: { __html: text.replace(/U/g, 'T') } });
+        });
+
+        const RumerControlsInExplorerPanel = ({ 
+            rumerActiveGeneticCodeId, onRumerGeneticCodeChange,
+            rumerActiveTransformFormula, onRumerTransformFormulaClick, onRumerResetTransforms,
+            onRumerFormulaPartHover,
+            reMetric, onReMetricChange
+        }) => {
+             const transformButtonsMeta = [
+                { type: 'R',  parts: [ {text:"R: ("}, {text:"T&harr;G", nucs:"U,G"}, {text:", "}, {text:"C&harr;A", nucs:"C,A"}, {text:")"} ], clickHighlight: "U,G,C,A"},
+                { type: 'R1', parts: [ {text:"R₁: ("}, {text:"T&harr;G", nucs:"U,G"}, {text:")"} ], clickHighlight: "U,G"},
+                { type: 'R2', parts: [ {text:"R₂: ("}, {text:"C&harr;A", nucs:"C,A"}, {text:")"} ], clickHighlight: "C,A"},
+            ];
+            
+            const allCodes = Object.values(geneticCodesForRumerExplorer).filter(Boolean);
+            const standardCode = allCodes.find(c => c.id === 'transl_table_1');
+            const nuclearCodes = allCodes.filter(c => c.category === 'nuclear' && c.id !== 'transl_table_1')
+                                      .sort((a,b) => a.name.localeCompare(b.name));
+            const mitochondrialCodes = allCodes.filter(c => c.category === 'mitochondrial')
+                                               .sort((a,b) => a.name.localeCompare(b.name));
+            const bacterialPlastidCodes = allCodes.filter(c => c.category === 'bacterial_plastid')
+                                                  .sort((a,b) => a.name.localeCompare(b.name));
+            const unofficialCodes = allCodes.filter(c => c.category === 'unofficial')
+                                            .sort((a,b) => a.name.localeCompare(b.name));
+
+            return (
+                React.createElement(Fragment, null,
+                    React.createElement('div', { className: 'rumer-control-panel-section' }, 
+                        React.createElement('h3', null, 'Rumer Transformations'), 
+                        transformButtonsMeta.map(meta => 
+                            React.createElement('div', { 
+                                key: meta.type, 
+                                className: `formula-btn-class ${rumerActiveTransformFormula === meta.type ? 'active-formula' : ''}`, 
+                                onClick: () => onRumerTransformFormulaClick(meta.type, meta.clickHighlight)
+                            }, 
+                                meta.parts.map((part, idx) => 
+                                    part.nucs ? 
+                                    React.createElement(FormulaPart, {
+                                        key: `${meta.type}-${idx}`, 
+                                        text: part.text,
+                                        nucleotidesInternal: part.nucs,
+                                        onHover: onRumerFormulaPartHover,
+                                        isActiveFormula: rumerActiveTransformFormula === meta.type
+                                    }) : 
+                                    React.createElement('span', {key: `${meta.type}-${idx}`, dangerouslySetInnerHTML:{__html: part.text.replace(/U/g, 'T')}})
+                                )
+                            )
+                        ),
+                        React.createElement('button', { id: 'rumerResetTransformsBtn', className: "border border-gray-400 rounded hover:bg-gray-100 genetic-code-btn", onClick: onRumerResetTransforms }, "Reset Transformations") 
+                    ),
+                    React.createElement('div', { className: 'rumer-control-panel-section' }, 
+                        React.createElement('h3', null, 'Genetic Code (for Analyzer)'),
+                        
+                        standardCode && React.createElement('button', { 
+                            key: standardCode.id, 
+                            className: `genetic-code-btn ${rumerActiveGeneticCodeId === standardCode.id ? 'active-code' : ''}`, 
+                            onClick: () => onRumerGeneticCodeChange(standardCode.id) 
+                        }, standardCode.name),
+                        
+                        nuclearCodes.map(codeDef => React.createElement('button', {
+                            key: codeDef.id, 
+                            className: `genetic-code-btn ${rumerActiveGeneticCodeId === codeDef.id ? 'active-code' : ''}`, 
+                            onClick: () => onRumerGeneticCodeChange(codeDef.id) 
+                        }, codeDef.name)),
+
+                        mitochondrialCodes.length > 0 && React.createElement('select', { 
+                                className: "genetic-code-btn mt-1", 
+                                value: mitochondrialCodes.some(c => c.id === rumerActiveGeneticCodeId) ? rumerActiveGeneticCodeId : "",
+                                onChange: (e) => e.target.value && onRumerGeneticCodeChange(e.target.value)
+                            },
+                            React.createElement('option', {value: ""}, "Mitochondrial..."), 
+                            mitochondrialCodes.map(codeDef => React.createElement('option', {key: codeDef.id, value: codeDef.id}, codeDef.name))
+                        ),
+
+                        bacterialPlastidCodes.length > 0 && React.createElement('select', { 
+                                className: "genetic-code-btn mt-1", 
+                                value: bacterialPlastidCodes.some(c => c.id === rumerActiveGeneticCodeId) ? rumerActiveGeneticCodeId : "",
+                                onChange: (e) => e.target.value && onRumerGeneticCodeChange(e.target.value)
+                            },
+                            React.createElement('option', {value: ""}, "Bacterial/Plastid..."), 
+                            bacterialPlastidCodes.map(codeDef => React.createElement('option', {key: codeDef.id, value: codeDef.id}, codeDef.name))
+                        ),
+                        
+                        unofficialCodes.length > 0 && React.createElement('select', { 
+                                className: "genetic-code-btn mt-1", 
+                                value: unofficialCodes.some(c => c.id === rumerActiveGeneticCodeId) ? rumerActiveGeneticCodeId : "",
+                                onChange: (e) => e.target.value && onRumerGeneticCodeChange(e.target.value)
+                            },
+                            React.createElement('option', {value: ""}, "Unofficial (Recent Finds)..."), 
+                            unofficialCodes.map(codeDef => React.createElement('option', {key: codeDef.id, value: codeDef.id}, codeDef.name))
+                        )
+                    ),
+                     React.createElement('div', { className: 'rumer-control-panel-section' },
+                        React.createElement('h3', null, 'Mini-Matrix Metric'),
+                        React.createElement('div', {className: 'text-xs'},
+                            React.createElement('label', {className: 'flex items-center cursor-pointer p-1'},
+                                React.createElement('input', { type: 'radio', name: 'reMetric', value: 'none', checked: reMetric === 'none', onChange: e => onReMetricChange(e.target.value), className: 'mr-1.5' }),
+                                "Hide Numbers"
+                            ),
+                            React.createElement('label', {className: 'flex items-center cursor-pointer p-1'},
+                                React.createElement('input', { type: 'radio', name: 'reMetric', value: 'mass', checked: reMetric === 'mass', onChange: e => onReMetricChange(e.target.value), className: 'mr-1.5' }),
+                                "Sum of Masses"
+                            ),
+                            React.createElement('label', {className: 'flex items-center cursor-pointer p-1'},
+                                React.createElement('input', { type: 'radio', name: 'reMetric', value: 'hbonds', checked: reMetric === 'hbonds', onChange: e => onReMetricChange(e.target.value), className: 'mr-1.5' }),
+                                "Sum of H-Bonds"
+                            )
+                        )
+                    )
+                )
+            );
+        };
+        
+        const SymmetryAnalysisDisplay = ({ analysisResults, activeCodeDef }) => {
+            if (!analysisResults && (!activeCodeDef || activeCodeDef.id === 'transl_table_1')) {
+                return React.createElement('div', {className: "symmetry-analysis-container text-xs"}, 
+                    "Symmetry analysis not required for Standard Code." 
+                );
+            }
+            if (!analysisResults) {
+                 return React.createElement('div', {className: "symmetry-analysis-container text-xs"}, "Loading analysis...");
+            }
+            return (
+                React.createElement('div', { className: 'symmetry-analysis-container' },
+                    React.createElement('h4', null, `Symmetry Analysis for: ${analysisResults.codeName}`), 
+                    React.createElement('p', null, React.createElement('strong', null, "Changes in Octet I (vs. Standard):")), 
+                    React.createElement('ul', null, 
+                        analysisResults.octetIChanges.becameNonOctetI.size > 0 && React.createElement('li', null, `Left Octet I: ${Array.from(analysisResults.octetIChanges.becameNonOctetI).map(p => formatOrderForDisplay(p.split(''))).join(', ')}`), 
+                        analysisResults.octetIChanges.becameOctetI.size > 0 && React.createElement('li', null, `Joined Octet I: ${Array.from(analysisResults.octetIChanges.becameOctetI).map(p => formatOrderForDisplay(p.split(''))).join(', ')}`), 
+                        (analysisResults.octetIChanges.becameNonOctetI.size === 0 && analysisResults.octetIChanges.becameOctetI.size === 0) && React.createElement('li', null, "Octet I composition matches standard.") 
+                    ),
+                    React.createElement('p', null, React.createElement('strong', null, "R-Symmetry Check (Octet I \u2194 Octet II):")), 
+                    analysisResults.rSymmetryViolations.length === 0 ? 
+                        React.createElement('p', {className: "text-green-600"}, "Rumer's R-symmetry is fully preserved.") : 
+                        React.createElement(Fragment, null, 
+                            React.createElement('p', {className: "text-red-600"}, "Rumer's R-symmetry is violated:"), 
+                            React.createElement('ul', null, analysisResults.rSymmetryViolations.map((v, i) => React.createElement('li', {key:i}, v)))
+                        )
+                )
+            );
+        };
+
+        const InfoModal = ({ onClose, infoContent }) => {
+            const [currentLang, setCurrentLang] = useState('en'); 
+
+            return React.createElement('div', { className: 'info-modal-overlay', onClick: onClose },
+                React.createElement('div', { className: 'info-modal-content', onClick: e => e.stopPropagation() },
+                    React.createElement('div', { className: 'flex justify-between items-center mb-4' },
+                        React.createElement('h2', { className: 'text-xl font-semibold' }, currentLang === 'en' ? 'Information' : 'Информация'),
+                        React.createElement('button', { onClick: onClose, className: 'text-2xl font-bold text-gray-500 hover:text-gray-700 leading-none p-1' }, "\u00D7")
+                    ),
+                    React.createElement('div', { className: 'mb-4 info-modal-lang-toggle' },
+                        React.createElement('button', { 
+                            className: `py-1 px-3 rounded mr-2 ${currentLang === 'en' ? 'active-lang' : 'text-gray-700 hover:bg-gray-300'}`,
+                            onClick: () => setCurrentLang('en')
+                        }, 'English'),
+                        React.createElement('button', { 
+                            className: `py-1 px-3 rounded ${currentLang === 'ru' ? 'active-lang' : 'text-gray-700 hover:bg-gray-300'}`,
+                            onClick: () => setCurrentLang('ru')
+                        }, 'Русский')
+                    ),
+                    React.createElement('div', { dangerouslySetInnerHTML: { __html: currentLang === 'en' ? infoContent.en : infoContent.ru } })
+                )
+            );
+        };
+
+        const RumerOrbitExplorerContainer = ({ 
+            rumerOrbitsData, rumerCurrentOrbitIndex, rumerCurrentlyDisplayedOrders, rumerActiveGeneticCodeDef,
+            rumerSymmetryAnalysis, rumerHighlightedActiveNucs, rumerHighlightedTempNucs,
+            onRumerSelectOrbit, 
+            rumerActiveGeneticCodeId, onRumerGeneticCodeChange,
+            rumerActiveTransformFormula, onRumerTransformFormulaClick, onRumerResetTransforms,
+            onRumerFormulaPartHover,
+            rumerHoveredCellPair, 
+            onRumerMiniMatrixCellHover,
+            onToggleInfoModal,
+            reMetric, onReMetricChange
+        }) => {
+            const displayOrderKeys = ['E', 'R1', 'R2', 'R']; 
+            return (
+                React.createElement('div', { className: 'rumer-explorer-app' }, 
+                    React.createElement('div', { className: 'orbit-selector-panel' }, 
+                        React.createElement('h2', null, 'Orbits:'), 
+                        rumerOrbitsData.map((orbit, index) => React.createElement('button', { 
+                            key: `orbit-btn-${index}`, 
+                            className: rumerCurrentOrbitIndex === index ? 'active' : '', 
+                            title: `Show orbit ${index + 1} (E-element: ${orbit.orders.E ? formatOrderForDisplay(orbit.orders.E.split('')) : '...'})`, 
+                            onClick: () => onRumerSelectOrbit(index, rumerOrbitsData) 
+                        }, `Orbit ${index + 1} (${orbit.orders.E ? formatOrderForDisplay(orbit.orders.E.split('')) : '...'})`) ),
+                        
+                        React.createElement(RumerControlsInExplorerPanel, {
+                            rumerActiveGeneticCodeId, onRumerGeneticCodeChange,
+                            rumerSymmetryAnalysis, rumerActiveGeneticCodeDef, 
+                            rumerActiveTransformFormula, onRumerTransformFormulaClick, onRumerResetTransforms,
+                            onRumerFormulaPartHover,
+                            reMetric, onReMetricChange
+                        })
+                    ),
+                    React.createElement('div', { className: 'main-visualization-area' }, 
+                        React.createElement('div', { className: 'text-center mb-2' },
+                            React.createElement('button', { 
+                                onClick: onToggleInfoModal, 
+                                className: "info-modal-btn"
+                            }, "Information")
+                        ),
+                        React.createElement('div', { id: 'orbitDisplayArea', className: 'orbit-display-area' },
+                            (rumerCurrentlyDisplayedOrders.E && rumerOrbitsData.length > 0) ? 
+                                displayOrderKeys.map((key, idx) => { 
+                                    const orderInternalStr = rumerCurrentlyDisplayedOrders[key];
+                                    if (!orderInternalStr) return React.createElement('div', {key: `placeholder-${idx}`}, '...');
+                                    return React.createElement(MiniMatrix, { 
+                                        key: `${key}-${orderInternalStr}-${rumerActiveGeneticCodeId}-${rumerCurrentOrbitIndex}-${reMetric}`, 
+                                        axisOrderInternalArray: orderInternalStr.split(''), 
+                                        titleSuffix: key, 
+                                        activeGeneticCodeDef: rumerActiveGeneticCodeDef, 
+                                        analysisCache: rumerSymmetryAnalysis, 
+                                        highlightedActiveNucs: rumerHighlightedActiveNucs, 
+                                        highlightedTempNucs: rumerHighlightedTempNucs,     
+                                        className: `matrix-pos-${idx}`,
+                                        rumerHoveredCellPair: rumerHoveredCellPair, 
+                                        currentMatrixOrderKey: key, 
+                                        onCellHover: onRumerMiniMatrixCellHover,
+                                        displayMetric: reMetric
+                                    });
+                                }) : React.createElement('p', null, 'Loading orbits...') 
+                        ),
+                        React.createElement(SymmetryAnalysisDisplay, { analysisResults: rumerSymmetryAnalysis, activeCodeDef: rumerActiveGeneticCodeDef })
+                    )
+                )
+            );
+        };
+
+        const SelectedCodonsSumDisplay = ({ selectedCodons, effectiveCodeTable, onReset }) => {
+            const numSelected = selectedCodons.size;
+            if (numSelected === 0) {
+                return React.createElement('div', { className: "mt-4 p-2 text-sm text-gray-600 text-center" }, "Click codons in the table to sum their masses.");
+            }
+
+            let totalFreeAAMass = 0;
+            let totalSideChainMass = 0;
+            let totalDnaResidueMass = 0;
+            let totalRnaResidueMass = 0;
+            let totalDoubleHelixResidueMass = 0;
+            let totalFreeDnaComponentMass = 0;
+            let totalFreeRnaComponentMass = 0;
+            let totalFreeDoubleHelixComponentMass = 0;
+            const selectedAA = [];
+            const totalAtoms = { C: 0, H: 0, N: 0, O: 0, S: 0 };
+
+            const complementMap = { 'U': 'A', 'A': 'U', 'C': 'G', 'G': 'C' };
+            
+            selectedCodons.forEach(codonInternal => {
+                const aminoAcidThreeLetter = effectiveCodeTable[codonInternal] || '?';
+                selectedAA.push(aminoAcidThreeLetter);
+                
+                totalFreeAAMass += aminoAcidAtomicWeights[aminoAcidThreeLetter] || 0;
+                totalSideChainMass += aminoAcidSideChainWeights[aminoAcidThreeLetter] || 0;
+                
+                const atoms = aminoAcidAtomCounts[aminoAcidThreeLetter] || aminoAcidAtomCounts['?'];
+                Object.keys(totalAtoms).forEach(key => totalAtoms[key] += atoms[key]);
+
+                const n1 = codonInternal[0], n2 = codonInternal[1], n3 = codonInternal[2];
+                totalDnaResidueMass += dnaNucleotideResidueMasses[n1] + dnaNucleotideResidueMasses[n2] + dnaNucleotideResidueMasses[n3];
+                totalRnaResidueMass += rnaNucleotideResidueMasses[n1] + rnaNucleotideResidueMasses[n2] + rnaNucleotideResidueMasses[n3];
+                
+                const c1 = complementMap[n1], c2 = complementMap[n2], c3 = complementMap[n3];
+                totalDoubleHelixResidueMass += (dnaNucleotideResidueMasses[n1] + dnaNucleotideResidueMasses[c1]) + 
+                                               (dnaNucleotideResidueMasses[n2] + dnaNucleotideResidueMasses[c2]) +
+                                               (dnaNucleotideResidueMasses[n3] + dnaNucleotideResidueMasses[c3]);
+
+                totalFreeDnaComponentMass += freeDnaNucleotideMasses[n1] + freeDnaNucleotideMasses[n2] + freeDnaNucleotideMasses[n3];
+                totalFreeRnaComponentMass += freeRnaNucleotideMasses[n1] + freeRnaNucleotideMasses[n2] + freeRnaNucleotideMasses[n3];
+                totalFreeDoubleHelixComponentMass += (freeDnaNucleotideMasses[n1] + freeDnaNucleotideMasses[c1]) +
+                                           (freeDnaNucleotideMasses[n2] + freeDnaNucleotideMasses[c2]) +
+                                           (freeDnaNucleotideMasses[n3] + freeDnaNucleotideMasses[c3]);
+            });
+            
+            const polypeptideMass = numSelected > 0 ? (totalFreeAAMass - (numSelected - 1) * WATER_MASS) : 0;
+            const dnaStrandMass = totalDnaResidueMass + WATER_MASS;
+            const rnaStrandMass = totalRnaResidueMass + WATER_MASS;
+            const doubleHelixMass = totalDoubleHelixResidueMass + (2 * WATER_MASS);
+
+            const renderMassValue = (value, componentSum) => {
+                const isValueSpecial = value > 0 && (value % 37 === 0);
+                const valueSpan = React.createElement('span', { className: `font-bold ${isValueSpecial ? 'text-green-600' : 'text-black'}` }, value);
+                if (componentSum === undefined) return valueSpan;
+                
+                const isComponentSpecial = componentSum > 0 && (componentSum % 37 === 0);
+                const componentSpan = React.createElement('span', { className: `font-bold text-gray-500 ${isComponentSpecial ? 'text-green-600' : ''}` }, `(${componentSum})`);
+                
+                return React.createElement(Fragment, null, valueSpan, ' ', componentSpan);
+            };
+            
+            const formatFormula = (atoms) => {
+                const peptideAtoms = { ...atoms };
+                if (numSelected > 0) {
+                    peptideAtoms.H -= (numSelected - 1) * 2;
+                    peptideAtoms.O -= (numSelected - 1) * 1;
+                }
+                let formula = "";
+                if(peptideAtoms.C > 0) formula += `C${peptideAtoms.C > 1 ? peptideAtoms.C : ''} `;
+                if(peptideAtoms.H > 0) formula += `H${peptideAtoms.H > 1 ? peptideAtoms.H : ''} `;
+                if(peptideAtoms.N > 0) formula += `N${peptideAtoms.N > 1 ? peptideAtoms.N : ''} `;
+                if(peptideAtoms.O > 0) formula += `O${peptideAtoms.O > 1 ? peptideAtoms.O : ''} `;
+                if(peptideAtoms.S > 0) formula += `S${peptideAtoms.S > 1 ? peptideAtoms.S : ''} `;
+                return formula.trim();
+            };
+
+            const massItems = [
+                { label: 'Sum of AA Masses:', value: polypeptideMass, componentSum: totalFreeAAMass },
+                { label: 'Sum of Side-Chain Masses:', value: totalSideChainMass },
+                { label: 'Total Double Helix Mass:', value: doubleHelixMass, componentSum: totalFreeDoubleHelixComponentMass },
+                { label: 'Codon Strand Mass (DNA):', value: dnaStrandMass, componentSum: totalFreeDnaComponentMass },
+                { label: 'Codon Strand Mass (RNA):', value: rnaStrandMass, componentSum: totalFreeRnaComponentMass },
+            ];
+
+            return React.createElement('div', { className: "mt-4 p-3 border-t border-gray-300" },
+                 React.createElement('div', { className: "flex justify-between items-center mb-2" },
+                    React.createElement('h4', { className: "text-sm font-semibold text-gray-700" }, `Sum of ${numSelected} Selected Codon(s):`),
+                    React.createElement('button', {
+                        onClick: onReset,
+                        className: "px-3 py-1.5 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors shadow-sm"
+                    }, "Reset Selection")
+                ),
+                React.createElement('div', { className: "grid grid-cols-2 gap-x-6 gap-y-1 text-sm font-mono p-2 bg-gray-50 rounded" }, 
+                    massItems.map(item => (
+                        React.createElement('div', { key: item.label, className: 'flex justify-between' },
+                            React.createElement('strong', { className: 'text-xs font-normal text-gray-600' }, item.label),
+                            renderMassValue(item.value, item.componentSum)
+                        )
+                    ))
+                ),
+                 React.createElement('div', { className: "mt-2 p-2 bg-gray-50 rounded" },
+                    React.createElement('h5', { className: "text-xs font-semibold text-gray-700 mb-1" }, "Atomic Composition:"),
+                    React.createElement('div', { className: "text-sm font-mono flex justify-between" },
+                        React.createElement('span', null, formatFormula(totalAtoms)),
+                        React.createElement('span', null, `Total: ${Object.values(totalAtoms).reduce((a, b) => a + b, 0) - ((numSelected > 0 ? numSelected-1:0) * 3) } atoms`)
+                    )
+                ),
+                React.createElement('div', {className: "text-xs text-gray-500 mt-2"}, "* Sums divisible by 37 are highlighted in green."),
+                React.createElement('div', {className: "text-xs text-gray-500 mt-1"}, "* Values are polymer masses (sum of components in parentheses)."),
+                React.createElement('div', { className: "mt-2 p-2 bg-gray-100 rounded text-xs font-mono break-all" },
+                    React.createElement('strong', null, "Selected AAs: "),
+                    selectedAA.join(' + ')
+                )
+            );
+        };
+
+        const MatrixInstance = ({ 
+            matrixConfig, orbitsDataForSelector, allPossibleOrders, propertyModes, 
+            onMatrixOrderChange, onMatrixPropertiesChange, onMatrixRumerCellHover,
+            matrixOrderSelectionMode, onToggleMatrixOrderMode,
+            effectiveCodeTable, effectiveSynonymCounts, currentRumerCodeDef, currentRumerCodeName,
+            selectedCodons, onCodonSelectToggle, onResetCodonSelection,
+            markovModel, onMarkovModelChange
+        }) => {
+            return (
+                React.createElement('div', { className: "flex flex-col h-full" }, 
+                    React.createElement('div', { className: "p-3 text-center flex-shrink-0 border-b border-gray-300", style: { paddingTop: '0.6rem', paddingBottom: '0.6rem'} },
+                         React.createElement('h3', { className: "text-lg font-semibold" },  
+                            `Genetic Code Matrix: `, 
+                            React.createElement('span', {className: "font-mono text-blue-600 text-sm"}, matrixConfig.titleSuffix) 
+                         )
+                    ),
+                    React.createElement('div', { className: "flex flex-row flex-grow overflow-hidden" }, 
+                        React.createElement('div', { className: "matrix-instance-order-panel" }, 
+                            React.createElement('div', {className: "mb-3 pb-2 border-b border-gray-300"},
+                                React.createElement('h4', {className: "text-xs font-semibold mb-1"}, "Matrix Axes Mode (1st & 2nd):"), 
+                                React.createElement('label', { htmlFor: "matrixOrderModeToggle", className: "flex items-center text-xs cursor-pointer" }, 
+                                    React.createElement('input', { type: 'checkbox', checked: matrixOrderSelectionMode === 'independent', onChange: onToggleMatrixOrderMode, id: "matrixOrderModeToggle", className: "form-checkbox h-3 w-3 text-blue-600 mr-1.5" }), 
+                                    "Independent Axes (1st / 2nd)" 
+                                )
+                            ),
+                            React.createElement(OrbitBasedOrderSelectorPanel, {
+                                panelTitle: matrixOrderSelectionMode === 'independent' ? 'Vertical Axis (1st):' : 'Axes Order (1st & 2nd):', 
+                                orbitsData: orbitsDataForSelector, 
+                                currentOrderArray: matrixConfig.orderVertical,
+                                onOrderSelect: (newOrder) => onMatrixOrderChange('vertical', newOrder)
+                            }),
+                            matrixOrderSelectionMode === 'independent' && React.createElement(AxisOrderSelect, { title: 'Horizontal Axis (2nd):', allOrders: allPossibleOrders, currentOrderArray: matrixConfig.orderHorizontal, onOrderSelect: (newOrder) => onMatrixOrderChange('horizontal', newOrder) }), 
+                            React.createElement(AxisOrderSelect, { title: '3rd Position:', allOrders: allPossibleOrders, currentOrderArray: matrixConfig.orderThird, onOrderSelect: (newOrder) => onMatrixOrderChange('third', newOrder) }) 
+                        ),
+                        React.createElement('div', { className: "flex-1 p-3 flex flex-col overflow-hidden min-w-0" }, 
+                            React.createElement('div', { className: "flex-1 overflow-auto" }, 
+                                React.createElement(MatrixTable, { 
+                                    orderVertical: matrixConfig.orderVertical, 
+                                    orderHorizontal: matrixConfig.orderHorizontal, 
+                                    orderThird: matrixConfig.orderThird, 
+                                    showProperties: matrixConfig.properties, 
+                                    rumerHoverPair: matrixConfig.rumerHoverPair, 
+                                    onRumerCellHover: onMatrixRumerCellHover,
+                                    effectiveCodeTable: effectiveCodeTable,
+                                    effectiveSynonymCounts: effectiveSynonymCounts,
+                                    currentRumerCodeDef: currentRumerCodeDef,
+                                    selectedCodons: selectedCodons, 
+                                    onCodonSelectToggle: onCodonSelectToggle,
+                                    markovModel: markovModel
+                                }),
+                                React.createElement(SelectedCodonsSumDisplay, {
+                                    selectedCodons: selectedCodons,
+                                    effectiveCodeTable: effectiveCodeTable, 
+                                    onReset: onResetCodonSelection
+                                }),
+                                React.createElement(LegendDisplay, { 
+                                    showProperties: matrixConfig.properties,
+                                    currentRumerCodeName: currentRumerCodeName,
+                                    markovModel: markovModel, 
+                                    onMarkovModelChange: onMarkovModelChange
+                                })
+                            )
+                        ),
+                        React.createElement(PropertySelector, { modes: propertyModes, currentMode: matrixConfig.properties, onModeChange: onMatrixPropertiesChange })
+                    )
+                )
+            );
+        };
+        
+        const DualGeneticCodeApp = () => {
+            const [matrixOrderSelectionMode, setMatrixOrderSelectionMode] = useState('sync'); 
+            const allPossibleOrdersForMatrixSelect = useMemo(() => { const allPerms = generatePermutations([...baseNucleotidesInternalGlobal]); return allPerms.map(p_arr => ({ internal: p_arr, display: formatOrderForDisplay(p_arr) })).sort((a,b) => a.display.localeCompare(b.display)); }, []);
+            
+            const [markovModel, setMarkovModel] = useState('kimura');
+            const matrixPropertyModes = [ 
+                { value: 'rumer', label: "By Rumer Octets" }, 
+                { value: 'markov_stability', label: 'By Markov Stability' }, 
+                { value: 'aminoacids', label: 'By Amino Acids' }, 
+                { value: 'sidechain_mass', label: 'By Side Chain Mass' },
+                { value: 'synthetases', label: 'By Synthetase Subtypes' },
+                { value: 'custom_trna', label: 'Custom tRNA Anticodons' },
+                { value: 'hydrophobicity', label: 'By AA Hydrophobicity' }, 
+                { value: 'charge', label: 'By AA Charge' }, 
+                { value: 'synonyms', label: 'By Synonym Count' },
+                { value: 'strength', label: 'By H-bond Strength' }, 
+                { value: 'type', label: 'By Nucleotide Type' }, 
+                { value: 'au_cg_content', label: 'By A+U / C+G Content' }, 
+                { value: 'pupy_code', label: 'By Pu/Py Color Code' }, 
+                { value: 'amino_keto_type', label: 'By Amino/Keto Type (1,2)'}, 
+            ];
+            const initialMatrixProperties = 'rumer'; 
+            
+            const rumerOrbitsDataGenerated = useMemo(() => generateRumerOrbitsDataInternal(), []);
+
+            const initialMatrixConfig = useMemo(() => {
+                let defaultOrder1 = [...baseNucleotidesInternalGlobal];
+                const defaultOrderThird = [...baseNucleotidesInternalGlobal];
+                if (rumerOrbitsDataGenerated.length > 0 && rumerOrbitsDataGenerated[0].orders.E) {
+                    defaultOrder1 = rumerOrbitsDataGenerated[0].orders.E.split('');
+                }
+                return { id: 'matrix1', orderVertical: defaultOrder1, orderHorizontal: defaultOrder1, orderThird: defaultOrderThird, properties: initialMatrixProperties, rumerHoverPair: null};
+            }, [rumerOrbitsDataGenerated]); 
+            
+            const [matrixConfig, setMatrixConfig] = useState(initialMatrixConfig);
+            
+            const [rumerOrbitsData, setRumerOrbitsData] = useState([]); 
+            const [rumerCurrentOrbitIndex, setRumerCurrentOrbitIndex] = useState(0);
+            const [rumerActiveGeneticCodeId, setRumerActiveGeneticCodeId] = useState('transl_table_1'); 
+            const [rumerSymmetryAnalysis, setRumerSymmetryAnalysis] = useState(null);
+            const [rumerInitialOrbitOrders, setRumerInitialOrbitOrders] = useState({ E: '', R1: '', R2: '', R: '' });
+            const [rumerCurrentlyDisplayedOrders, setRumerCurrentlyDisplayedOrders] = useState({ E: '', R1: '', R2: '', R: '' });
+            const [rumerActiveTransformFormula, setRumerActiveTransformFormula] = useState(null);
+            const [rumerHighlightedActiveNucs, setRumerHighlightedActiveNucs] = useState(new Set());
+            const [rumerHighlightedTempNucs, setRumerHighlightedTempNucs] = useState(new Set()); 
+            const [rumerHoveredCellPair, setRumerHoveredCellPair] = useState(null);
+            const [reMetric, setReMetric] = useState('none');
+
+            const [selectedCodonsForSumming, setSelectedCodonsForSumming] = useState(new Set());
+            const [showInfoModal, setShowInfoModal] = useState(false);
+
+            const toggleInfoModal = useCallback(() => {
+                setShowInfoModal(prev => !prev);
+            }, []);
+
+            const handleCodonSelectToggle = useCallback((codonInternal) => {
+                setSelectedCodonsForSumming(prevSelected => {
+                    const newSelected = new Set(prevSelected);
+                    if (newSelected.has(codonInternal)) {
+                        newSelected.delete(codonInternal);
+                    } else {
+                        newSelected.add(codonInternal);
+                    }
+                    return newSelected;
+                });
+            }, []);
+
+            const resetCodonSelection = useCallback(() => {
+                setSelectedCodonsForSumming(new Set());
+            }, []);
+            
+            const rumerActiveGeneticCodeDef = useMemo(() => geneticCodesForRumerExplorer[rumerActiveGeneticCodeId] || geneticCodesForRumerExplorer['transl_table_1'], [rumerActiveGeneticCodeId]);
+            const matrixInstanceEffectiveCodeTable = useMemo(() => createEffectiveCodeTableForMatrixInstance(rumerActiveGeneticCodeDef), [rumerActiveGeneticCodeDef]);
+            const matrixInstanceEffectiveSynonymCounts = useMemo(() => calculateSynonymsForMatrixInstance(matrixInstanceEffectiveCodeTable), [matrixInstanceEffectiveCodeTable]);
+
+            const getMatrixTitleSuffix = (config) => { const vertDisplay = formatOrderForDisplay(config.orderVertical); const thirdDisplay = formatOrderForDisplay(config.orderThird); let title = ""; if (matrixOrderSelectionMode === 'sync' || config.orderVertical.join('') === config.orderHorizontal.join('')) { title = `1&2: ${vertDisplay}`; } else { const horizDisplay = formatOrderForDisplay(config.orderHorizontal); title = `V(1):${vertDisplay}/H(2):${horizDisplay}`; } if (config.orderThird.join('') !== baseNucleotidesInternalGlobal.join('')) { title += ` / 3rd: ${thirdDisplay}`; } else if (matrixOrderSelectionMode === 'independent') { title += ` / 3rd: ${thirdDisplay}`; } return title; };
+            const handleMatrixOrderChange = (axis, newOrder) => { setMatrixConfig(prevConfig => { let newConfigData = { ...prevConfig, rumerHoverPair: null }; if (axis === 'vertical') { newConfigData.orderVertical = newOrder; if (matrixOrderSelectionMode === 'sync') { newConfigData.orderHorizontal = newOrder; } }  else if (axis === 'horizontal' && matrixOrderSelectionMode === 'independent') { newConfigData.orderHorizontal = newOrder; }  else if (axis === 'third') { newConfigData.orderThird = newOrder; } return newConfigData; }); };
+            const handleMatrixPropertiesChange = (newProperties) => { setMatrixConfig(prevConfig => ({ ...prevConfig, properties: newProperties, rumerHoverPair: null })); };
+            const handleToggleMatrixOrderMode = () => { const newMode = matrixOrderSelectionMode === 'sync' ? 'independent' : 'sync'; setMatrixOrderSelectionMode(newMode); setMatrixConfig(prevConfig => ({ ...prevConfig, orderHorizontal: newMode === 'sync' ? prevConfig.orderVertical : prevConfig.orderHorizontal, rumerHoverPair: null })); };
+            const handleMatrixRumerCellHover = (cellKey, isEntering) => { if (!isEntering) { setMatrixConfig(prev => ({ ...prev, rumerHoverPair: null })); return; } if (matrixConfig.properties !== 'rumer') { setMatrixConfig(prev => ({ ...prev, rumerHoverPair: null })); return; } const nuc1Internal = matrixConfig.orderVertical.find(n => formatNucleotideDisplay(n) === cellKey[0]); const nuc2Internal = matrixConfig.orderHorizontal.find(n => formatNucleotideDisplay(n) === cellKey[1]); if (!nuc1Internal || !nuc2Internal) { setMatrixConfig(prev => ({ ...prev, rumerHoverPair: null })); return; } const partnerKey = getRumerPartnerKey(nuc1Internal, nuc2Internal); setMatrixConfig(prev => ({ ...prev, rumerHoverPair: { original: cellKey, partner: partnerKey } })); };
+            
+            const handleRumerSelectOrbit = useCallback((orbitIdx, orbitsToUse) => {
+                if (!orbitsToUse || orbitIdx < 0 || orbitIdx >= orbitsToUse.length) {
+                    return;
+                }
+                setRumerCurrentOrbitIndex(orbitIdx); 
+                const orbit = orbitsToUse[orbitIdx]; 
+                if (orbit && orbit.orders) {
+                    setRumerInitialOrbitOrders({...orbit.orders}); 
+                    setRumerCurrentlyDisplayedOrders({...orbit.orders}); 
+                } else {
+                     setRumerInitialOrbitOrders({ E: '', R1: '', R2: '', R: '' });
+                     setRumerCurrentlyDisplayedOrders({ E: '', R1: '', R2: '', R: '' });
+                }
+                setRumerActiveTransformFormula(null); 
+                setRumerHighlightedActiveNucs(new Set()); 
+                setRumerHighlightedTempNucs(new Set()); 
+                setRumerHoveredCellPair(null);
+            }, []); 
+
+            useEffect(() => { 
+                setRumerOrbitsData(rumerOrbitsDataGenerated);
+                if (rumerOrbitsDataGenerated.length > 0) { 
+                    handleRumerSelectOrbit(0, rumerOrbitsDataGenerated); 
+                    if (rumerOrbitsDataGenerated[0].orders.E) {
+                        const defaultOrder1 = rumerOrbitsDataGenerated[0].orders.E.split('');
+                         setMatrixConfig(prev => {
+                            if (prev.orderVertical.join('') !== defaultOrder1.join('')) {
+                                return {
+                                    ...prev,
+                                    orderVertical: defaultOrder1,
+                                    orderHorizontal: matrixOrderSelectionMode === 'sync' ? defaultOrder1 : prev.orderHorizontal
+                                };
+                            }
+                            return prev;
+                        });
+                    }
+                }
+            }, [rumerOrbitsDataGenerated, handleRumerSelectOrbit, matrixOrderSelectionMode]); 
+            
+            useEffect(() => { 
+                if (rumerActiveGeneticCodeDef) {
+                    if (rumerActiveGeneticCodeDef.id === 'transl_table_1') { setRumerSymmetryAnalysis(null); } 
+                    else { const analysisResults = analyzeSymmetriesInternal(rumerActiveGeneticCodeDef); setRumerSymmetryAnalysis(analysisResults); }
+                }
+            }, [rumerActiveGeneticCodeDef]); 
+            
+            const handleRumerGeneticCodeChange = (codeId) => { setRumerActiveGeneticCodeId(codeId); };
+            const handleRumerTransformFormulaClick = (transformType, nucleotidesToHighlightInternalStr) => { const newActiveNucs = new Set(nucleotidesToHighlightInternalStr ? nucleotidesToHighlightInternalStr.split(',') : []); if (rumerHighlightedTempNucs.size > 0) setRumerHighlightedTempNucs(new Set()); if (rumerActiveTransformFormula === transformType) { setRumerCurrentlyDisplayedOrders({...rumerInitialOrbitOrders}); setRumerActiveTransformFormula(null); setRumerHighlightedActiveNucs(new Set()); } else { const newOrders = {}; ['E', 'R1', 'R2', 'R'].forEach(key => { newOrders[key] = applyTransformToOrderInternal(rumerInitialOrbitOrders[key].split(''), transformType).join(''); }); setRumerCurrentlyDisplayedOrders(newOrders); setRumerActiveTransformFormula(transformType); setRumerHighlightedActiveNucs(newActiveNucs); } setRumerHoveredCellPair(null); };
+            const handleRumerResetTransforms = () => { setRumerCurrentlyDisplayedOrders({...rumerInitialOrbitOrders}); setRumerActiveTransformFormula(null); setRumerHighlightedActiveNucs(new Set()); setRumerHighlightedTempNucs(new Set()); setRumerHoveredCellPair(null);};
+            const handleRumerFormulaPartHover = (nucleotidesInternalArray, isEntering) => { const newTempNucs = isEntering ? new Set(nucleotidesInternalArray) : new Set(); if (newTempNucs.size !== rumerHighlightedTempNucs.size || ![...newTempNucs].every(n => rumerHighlightedTempNucs.has(n))) { setRumerHighlightedTempNucs(newTempNucs); }};
+            
+            const handleRumerMiniMatrixCellHover = (matrixOrderKey, cellXY_Internal, isEntering) => {
+                if (!isEntering || !rumerActiveTransformFormula || !cellXY_Internal || !matrixOrderKey) {
+                    setRumerHoveredCellPair(null); return;
+                }
+                const initialOrderForThisMatrixKey = rumerInitialOrbitOrders[matrixOrderKey];
+                if(!initialOrderForThisMatrixKey) { setRumerHoveredCellPair(null); return; }
+                
+                let partnerXY_Internal = null;
+                const transformToApply = rumerActiveTransformFormula; 
+
+                if (transformToApply) {
+                     partnerXY_Internal = applyTransformToOrderInternal(cellXY_Internal.split(''), transformToApply).join('');
+                }
+
+                if (partnerXY_Internal && partnerXY_Internal !== cellXY_Internal) { 
+                    setRumerHoveredCellPair({
+                        matrixOrderKey: matrixOrderKey,
+                        originalCellXY: cellXY_Internal,
+                        transformedCellXY: partnerXY_Internal
+                    });
+                } else {
+                     setRumerHoveredCellPair(null);
+                }
+            };
+
+            const infoContent = {
+                en: `
+                    <h2>About the Interactive Genetic Code Analyzer</h2>
+                    <p>This interactive web tool is designed for visualizing, exploring, and analyzing the structural and mathematical symmetries inherent in the genetic code. Special attention is given to the concepts first proposed by <strong>Yuri Borisovich Rumer</strong> and their further development.</p>
+                    <h3>Scientific Basis and Key Concepts:</h3>
+                    <h4>1. Rumer's Octets:</h4>
+                    <p><strong>Y.B. Rumer</strong> was the first to note that the 16 "columns" (XY-boxes, defined by the first two nucleotides of a codon) in the standard genetic code table can be divided into two groups of eight columns each – the <strong>Octets</strong>.</p>
+                    <ul>
+                        <li><strong>Octet I:</strong> Includes XY-boxes where all four codons (XYN, where N is any of the four nucleotides) code for the same amino acid (complete 4-fold degeneracy).</li>
+                        <li><strong>Octet II:</strong> Includes the remaining XY-boxes where such complete degeneracy is not observed.</li>
+                    </ul>
+                    <p>In this tool, assignment to Octet I or II is determined dynamically for the standard genetic code based on this principle of 4-fold degeneracy.</p>
+                    
+                    <h4>2. Rumer's R-Transformation:</h4>
+                    <p><strong>Y.B. Rumer</strong> also discovered that Octets I and II are related by a simple symmetry transformation <strong>R = (T&harr;G, C&harr;A)</strong> (in RNA nucleotides: U&harr;G, C&harr;A). This transformation mutually converts XY-boxes from Octet I to Octet II and vice versa.</p>
+
+                    <h4>3. Codograms and Code Representations:</h4>
+                    <p>The concept of a <strong>codogram</strong> was introduced by <strong>Vladimir I. Shcherbak</strong> and <strong>Maxim A. Makukov</strong> (see <a href="https://arxiv.org/pdf/1707.03382" target="_blank" rel="noopener noreferrer">Shcherbak & Makukov, 2013 / arXiv:1707.03382</a>) to visualize the structure of the genetic code. A codogram is a 4x4 square whose cells are colored based on whether the corresponding XY-box belongs to Octet I or Octet II.</p>
+                    <p>There are 24 possible ways to order the nucleotides (T, C, A, G or U, C, A, G) on the axes of a codogram if the order on both axes is synchronous ("homogeneous representations").</p>
+
+                    <h4>4. Simply-Connected Codograms and the {E, R, R1, R2} Transformation Group:</h4>
+                    <p><strong>Alexander D. Panov</strong> (see <a href="http://dec1.sinp.msu.ru/~panov" target="_blank" rel="noopener noreferrer">personal page</a>, <a href="https://www.sociostudies.org/almanac/articles/are_the_strange_information_structures_of_the_genetic_code_an_accident_or_an_artifact" target="_blank" rel="noopener noreferrer">publication</a>) and <strong>Felix P. Filatov</strong> analyzed all 24 codograms and found that among them, four "simply-connected" codograms stand out (two unique and their two mirror/rotated versions). In such codograms, the regions corresponding to Octets I and II are continuous, without breaks.</p>
+                    <p>They also showed that these four simply-connected codograms form a closed group under the transformations:</p>
+                    <ul>
+                        <li><strong>R</strong> (full Rumer): U&harr;G, C&harr;A</li>
+                        <li><strong>R1</strong> ("purine" Rumer transformation): U&harr;G (A and C unchanged)</li>
+                        <li><strong>R2</strong> ("pyrimidine" Rumer transformation): C&harr;A (U and G unchanged)</li>
+                        <li><strong>E</strong> (identity transformation)</li>
+                    </ul>
+                    <p>These four transformations {E, R, R1, R2} form a mathematical group (the Klein four-group V₄).</p>
+
+                    <h4>5. Codogram Orbits:</h4>
+                    <p>I (<strong>Ruslan Khafizov</strong>, contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a> https://www.facebook.com/russopirato, https://www.youtube.com/@ruslankhafizov251), the developer of this tool, established that all 24 codograms are divided into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. Each such orbit contains 4 codograms:</p>
+                    <ul style="font-family: monospace; list-style-type: none; padding-left: 5px;">
+                        <li>{TCAG, GACT, GCAT, TACG}</li>
+                        <li>{TCGA, GATC, GCTA, TAGC}</li>
+                        <li>{CTAG, AGCT, CGAT, ATCG}</li>
+                        <li>{CTGA, AGTC, CGTA, ATGC}</li>
+                        <li>{TGCA, GTAC, TGAC, GTCA}</li>
+                        <li>{ACGT, CATG, ACTG, CAGT}</li>
+                    </ul>
+                    <hr>
+                    <h3>Program Features</h3>
+                    <p>This tool is designed for both in-depth analysis and educational exploration. Here's a brief guide to its main features:</p>
+                    <ul>
+                        <li><strong>Dual-Panel Layout:</strong> The screen is split into two main sections. The **left panel (Rumer Orbit Explorer)** is for global settings and symmetry visualization. The **right panel (Detailed Matrix)** is for inspecting individual codons and their properties.</li>
+                        <li><strong>Interactive Matrix:</strong> In the right panel, you can click on any codon to select it for the calculator.</li>
+                        <li><strong>Mass & Atomic Calculator:</strong> Below the main matrix, a calculator automatically computes various biochemical properties for the selected codons, including biochemically accurate polymer masses and the total atomic composition of the resulting peptide.</li>
+                        <li><strong>Visualization Modes:</strong> On the far right, you can choose from over a dozen modes to color the codons in the main matrix. These modes highlight different properties, such as amino acid type, hydrophobicity, or evolutionary stability.</li>
+                        <li><strong>Genetic Code Selection:</strong> In the left panel, you can switch between dozens of official and unofficial genetic codes. This selection affects all calculations and visualizations in the application.</li>
+                        <li><strong>Rumer Transformations:</strong> The left panel also allows you to interactively apply Rumer's symmetry transformations (R, R1, R2) to the four mini-matrices, instantly seeing how the nucleotide orders change.</li>
+                    </ul>
+                `,
+                ru: `
+                    <h2>Об Интерактивном Анализаторе Генетического Кода</h2>
+                    <p>Этот интерактивный веб-инструмент предназначен для визуализации, исследования и анализа структурных и математических симметрий, присущих генетическому коду. Особое внимание уделяется концепциям, впервые предложенным <strong>Юрием Борисовичем Румером</strong>, и их дальнейшему развитию.</p>
+                    <h3>Научная основа и ключевые концепции:</h3>
+                    <h4>1. Октеты Румера:</h4>
+                    <p><strong>Ю.Б. Румер</strong> первым обратил внимание на то, что 16 "колонок" (XY-боксов, определяемых первыми двумя нуклеотидами кодона) в стандартной таблице генетического кода можно разделить на две группы по восемь колонок в каждой – <strong>Октеты</strong>.</p>
+                    <ul>
+                        <li><strong>Октет I:</strong> Включает XY-боксы, где все четыре кодона (XYN, где N - любой из четырех нуклеотидов) кодируют одну и ту же аминокислоту (полная 4-кратная вырожденность).</li>
+                        <li><strong>Октет II:</strong> Включает остальные XY-боксы, где такой полной вырожденности нет.</li>
+                    </ul>
+                    <p>В данном инструменте принадлежность к Октету I или II определяется динамически для стандартного генетического кода на основе этого принципа 4-кратной вырожденности.</p>
+                    
+                    <h4>2. R-преобразование Румера:</h4>
+                    <p><strong>Ю.Б. Румер</strong> также обнаружил, что Октеты I и II связаны простым преобразованием симметрии <strong>R = (T&harr;G, C&harr;A)</strong> (в нуклеотидах РНК: U&harr;G, C&harr;A). Это преобразование взаимно переводит XY-боксы из Октета I в Октет II и наоборот.</p>
+
+                    <h4>3. Кодограммы и представления кода:</h4>
+                    <p>Понятие <strong>кодограммы</strong> было введено <strong>Владимиром И. Щербаком</strong> и <strong>Максимом А. Макуковым</strong> (см. <a href="https://arxiv.org/pdf/1707.03382" target="_blank" rel="noopener noreferrer">Shcherbak & Makukov, 2013 / arXiv:1707.03382</a>) для визуализации структуры генетического кода. Кодограмма представляет собой квадрат 4x4, клетки которого окрашиваются в зависимости от принадлежности соответствующего XY-бокса к Октету I или Октету II.</p>
+                    <p>Существует 24 возможных способа упорядочить нуклеотиды (T, C, A, G или U, C, A, G) на осях кодограммы, если порядок на обеих осях синхронен ("однородные представления").</p>
+
+                    <h4>4. Односвязные кодограммы и группа преобразований {E, R, R1, R2}:</h4>
+                    <p><strong>Александр Дмитриевич Панов</strong> (см. <a href="http://dec1.sinp.msu.ru/~panov" target="_blank" rel="noopener noreferrer">персональная страница</a>, <a href="https://www.socionauki.ru/news/3562368" target="_blank" rel="noopener noreferrer">публикация</a>) и <strong>Феликс Петрович Филатов</strong> проанализировали все 24 кодограммы и обнаружили, что среди них выделяются четыре "односвязные" кодограммы (две уникальные и две их зеркальные/повернутые версии). В таких кодограммах области, соответствующие Октетам I и II, являются сплошными, без разрывов.</p>
+                    <p>Они также показали, что эти четыре односвязные кодограммы образуют замкнутую группу под действием преобразований:</p>
+                    <ul>
+                        <li><strong>R</strong> (полное Румеровское): U&harr;G, C&harr;A</li>
+                        <li><strong>R1</strong> ("пуриновое" преобразование Румера): U&harr;G (A и C не меняются)</li>
+                        <li><strong>R2</strong> ("пиримидиновое" преобразование Румера): C&harr;A (U и G не меняются)</li>
+                        <li><strong>E</strong> (тождественное преобразование)</li>
+                    </ul>
+                    <p>Эти четыре преобразования {E, R, R1, R2} образуют математическую группу (группу Клейна V₄).</p>
+
+                    <h4>5. Орбиты кодограмм:</h4>
+                    <p>Я (<strong>Руслан Хафизов</strong>, контакт: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a> https://www.facebook.com/russopirato, https://www.youtube.com/@ruslankhafizov251), разработчик данного инструмента, установил, что все 24 кодограммы делятся на 6 непересекающихся "орбит" под действием группы преобразований {E, R, R1, R2}. Каждая такая орбита содержит 4 кодограммы:</p>
+                    <ul style="font-family: monospace; list-style-type: none; padding-left: 5px;">
+                        <li>{TCAG, GACT, GCAT, TACG}</li>
+                        <li>{TCGA, GATC, GCTA, TAGC}</li>
+                        <li>{CTAG, AGCT, CGAT, ATCG}</li>
+                        <li>{CTGA, AGTC, CGTA, ATGC}</li>
+                        <li>{TGCA, GTAC, TGAC, GTCA}</li>
+                        <li>{ACGT, CATG, ACTG, CAGT}</li>
+                    </ul>
+                    <hr>
+                    <h3>Функционал Программы</h3>
+                    <p>Этот инструмент предназначен как для глубокого анализа, так и для образовательных целей. Вот краткое руководство по его основным возможностям:</p>
+                    <ul>
+                        <li><strong>Двухпанельный интерфейс:</strong> Экран разделен на две основные части. **Левая панель (Исследователь Орбит Румера)** предназначена для глобальных настроек и визуализации симметрий. **Правая панель (Детализированная Матрица)** служит для изучения отдельных кодонов и их свойств.</li>
+                        <li><strong>Интерактивная матрица:</strong> В правой панели вы можете кликнуть на любой кодон, чтобы выбрать его для калькулятора.</li>
+                        <li><strong>Калькулятор масс и атомарного состава:</strong> Под основной матрицей расположен калькулятор, который автоматически вычисляет различные биохимические свойства для выбранных кодонов, включая биохимически точные массы полимеров и полный атомарный состав итогового пептида.</li>
+                        <li><strong>Режимы визуализации:</strong> Справа вы можете выбрать один из более чем десяти режимов для окраски кодонов в основной матрице. Эти режимы подсвечивают различные свойства, такие как тип аминокислоты, гидрофобность или эволюционная стабильность.</li>
+                        <li><strong>Выбор генетического кода:</strong> В левой панели можно переключаться между десятками официальных и неофициальных генетических кодов. Этот выбор влияет на все вычисления и визуализации в приложении.</li>
+                        <li><strong>Преобразования Румера:</strong> Левая панель также позволяет интерактивно применять преобразования симметрии Румера (R, R1, R2) к четырем мини-матрицам, мгновенно наблюдая, как меняется порядок нуклеотидов.</li>
+                    </ul>
+                `
+            };
+
+            return React.createElement(Fragment, null,
+                React.createElement('div', { className: "flex flex-row w-screen", style: { height: '100vh' } },  
+                    React.createElement('div', { className: "w-2/5 h-full overflow-hidden border-r border-gray-300"},
+                        React.createElement(RumerOrbitExplorerContainer, {
+                            rumerOrbitsData: rumerOrbitsData, 
+                            rumerCurrentOrbitIndex, rumerCurrentlyDisplayedOrders, rumerActiveGeneticCodeDef,
+                            rumerSymmetryAnalysis, rumerHighlightedActiveNucs, rumerHighlightedTempNucs,
+                            onRumerSelectOrbit: handleRumerSelectOrbit, 
+                            rumerActiveGeneticCodeId, onRumerGeneticCodeChange: handleRumerGeneticCodeChange,
+                            rumerActiveTransformFormula, onRumerTransformFormulaClick: handleRumerTransformFormulaClick, 
+                            onRumerResetTransforms: handleRumerResetTransforms,
+                            onRumerFormulaPartHover: handleRumerFormulaPartHover,
+                            rumerHoveredCellPair: rumerHoveredCellPair, 
+                            onRumerMiniMatrixCellHover: handleRumerMiniMatrixCellHover,
+                            onToggleInfoModal: toggleInfoModal,
+                            reMetric, onReMetricChange: setReMetric
+                        }) 
+                    ),
+                    React.createElement('div', { className: "w-3/5 h-full overflow-hidden"},
+                        React.createElement(MatrixInstance, {
+                            matrixConfig: { ...matrixConfig, titleSuffix: getMatrixTitleSuffix(matrixConfig) },
+                            orbitsDataForSelector: rumerOrbitsDataGenerated, 
+                            allPossibleOrders: allPossibleOrdersForMatrixSelect,
+                            propertyModes: matrixPropertyModes, 
+                            onMatrixOrderChange: handleMatrixOrderChange,
+                            onMatrixPropertiesChange: handleMatrixPropertiesChange, 
+                            onMatrixRumerCellHover: handleMatrixRumerCellHover,
+                            matrixOrderSelectionMode, 
+                            onToggleMatrixOrderMode: handleToggleMatrixOrderMode,
+                            effectiveCodeTable: matrixInstanceEffectiveCodeTable,
+                            effectiveSynonymCounts: matrixInstanceEffectiveSynonymCounts,
+                            currentRumerCodeDef: rumerActiveGeneticCodeDef,
+                            currentRumerCodeName: rumerActiveGeneticCodeDef ? rumerActiveGeneticCodeDef.name : "Standard",
+                            selectedCodons: selectedCodonsForSumming,
+                            onCodonSelectToggle: handleCodonSelectToggle,
+                            onResetCodonSelection: resetCodonSelection,
+                            markovModel: markovModel,
+                            onMarkovModelChange: setMarkovModel
+                        })
+                    )
+                ),
+                showInfoModal && React.createElement(InfoModal, { onClose: toggleInfoModal, infoContent: infoContent })
+            ); 
+        };
+        ReactDOM.render(React.createElement(DualGeneticCodeApp), document.getElementById('root'));
+    </script>
+</body>
+</html>
