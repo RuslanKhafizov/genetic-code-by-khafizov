@@ -2,8 +2,9 @@
 
 This interactive web tool is designed for visualizing, exploring, and analyzing structural and mathematical symmetries inherent in the genetic code. It particularly focuses on the concepts related to Rumer's transformations and extends this analysis to the group symmetries formed by codogram orbits.
 
-*   **[Stable Version](https://ruslankhafizov.github.io/genetic-code-by-khafizov/)** - The original, stable version of the analyzer.
-*   **[Beta Version](https://ruslankhafizov.github.io/genetic-code-by-khafizov/beta.html)** - Includes new and experimental features. For a detailed list of new features, see the bottom of this document.
+*   **[v1.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/)**
+*   **[v2.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/beta.html)**
+*   **[v3.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/v3.0.html)**
 
 ## Core Features
 
@@ -79,11 +80,11 @@ In this tool, assignment to Octet I or II is determined dynamically for the stan
 Y.B. Rumer also discovered that Octets I and II are related by a simple symmetry transformation **R = (T↔G, C↔A)** (in RNA nucleotides: U↔G, C↔A). This transformation mutually converts XY-boxes from Octet I to Octet II and vice versa.
 
 **3. Codograms and Code Representations:**
-The concept of a **codogram** was introduced by Vladimir I. Shcherbak and Maxim A. Makukov (see <a href="https://arxiv.org/pdf/1707.03382" target="_blank" rel="noopener noreferrer">Shcherbak & Makukov, 2013 / arXiv:1707.03382</a>) to visualize the structure of the genetic code. A codogram is a 4x4 square whose cells are colored based on whether the corresponding XY-box belongs to Octet I or Octet II.
+The concept of a **codogram** was introduced by Vladimir I. Shcherbak and Maxim A. Makukov (see <a href="https://arxiv.org/pdf/1707.03382" target="_blank" rel="noopener noreferrer" target="_blank" rel="noopener noreferrer">publication</a>) to visualize the structure of the genetic code. A codogram is a 4x4 square whose cells are colored based on whether the corresponding XY-box belongs to Octet I or Octet II.
 There are 24 possible ways to order the nucleotides (U, C, A, G) on the axes of a codogram if the order on both axes is synchronous ("homogeneous representations").
 
 **4. Simply-Connected Codograms and the {E, R, R1, R2} Transformation Group:**
-Alexander D. Panov (see <a href="http://dec1.sinp.msu.ru/~panov" target="_blank" rel="noopener noreferrer">personal page</a>, <a href="https://www.socionauki.ru/news/3562368" target="_blank" rel="noopener noreferrer">publication</a>) and Felix P. Filatov analyzed all 24 codograms and found that among them, four "simply-connected" codograms stand out. In such codograms, the regions corresponding to Octets I and II are continuous.
+Alexander D. Panov (see <a href="http://dec1.sinp.msu.ru/~panov" target="_blank" rel="noopener noreferrer">personal page</a>, <a href="https://www.sociostudies.org/almanac/articles/are_the_strange_information_structures_of_the_genetic_code_an_accident_or_an_artifact" target="_blank" rel="noopener noreferrer">publication</a>) and Felix P. Filatov analyzed all 24 codograms and found that among them, four "simply-connected" codograms stand out. In such codograms, the regions corresponding to Octets I and II are continuous.
 They also showed that these four simply-connected codograms form a closed group under the transformations:
 *   **R** (full Rumer): U↔G, C↔A
 *   **R1** ("purine" Rumer transformation): U↔G (A and C unchanged)
@@ -92,7 +93,7 @@ They also showed that these four simply-connected codograms form a closed group 
 These four transformations {E, R, R1, R2} form a mathematical group (the Klein four-group V₄).
 
 **5. Codogram Orbits:**
-Further analysis by the author of this tool (Ruslan Khafizov, contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>) has shown that all 24 homogeneous codograms are partitioned into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. Each such orbit contains 4 codograms, and this tool demonstrates these orbital structures:
+Further analysis by the author of this tool (Ruslan Khafizov) has shown that all 24 homogeneous codograms are partitioned into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. Each such orbit contains 4 codograms, and this tool demonstrates these orbital structures:
 *   {TCAG, GACT, GCAT, TACG}
 *   {TCGA, GATC, GCTA, TAGC}
 *   {CTAG, AGCT, CGAT, ATCG}
@@ -118,9 +119,9 @@ Further analysis by the author of this tool (Ruslan Khafizov, contact: <a href="
 *   **TinyColor** (via CDN for color manipulation)
 *   HTML5, CSS3, JavaScript (ES6+)
 
-## New Features in the Beta Version
+## New Features in the v2.0
 
-The [Beta Version](https://ruslankhafizov.github.io/genetic-code-by-khafizov/beta.html) includes all stable features plus the following additions:
+The [v2.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/beta.html) includes all stable features plus the following additions:
 
 *   **New Visualization Mode - "By Side Chain Mass":**
     *   Colors codons based on the mass of their unique side chains (R-groups), categorized into four groups.
@@ -135,9 +136,32 @@ The [Beta Version](https://ruslankhafizov.github.io/genetic-code-by-khafizov/bet
         2.  **Sum of H-Bonds** (a new physical metric)
         3.  **Hide Numbers** (now the default in Beta).
 
+## New Features in the v3.0
+
+The [v3.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/v3.0.html) includes all stable features plus the following additions:
+
+*   **Advanced Mass Calculator:**
+    *   Select any number of codons in the matrix to calculate their combined properties.
+    *   **Biochemically Correct Polymer Masses:** Calculates the true mass of polypeptide chains, DNA/RNA strands, and DNA double helices, accounting for water loss during polymerization.
+    *   **Dual Mass Display:** Shows both the final polymer mass and the sum of its free components in parentheses for clarity (e.g., `polymer_mass (sum_of_components)`).
+    *   **Atomic Composition & Chemical Formula:** Automatically calculates the total atomic count (C, H, N, O, S) and displays the gross chemical formula of the selected peptide in real-time.
+    *   Highlights sums divisible by 37 in green.
+
+*   **Markov Stability Analysis:**
+    *   A dedicated visualization mode to color codons by their evolutionary stability.
+    *   Calculates the probabilities of synonymous, non-synonymous, and STOP mutations.
+    *   Supports two models: a simple (equal probability) model and the Kimura K2P model.
+
+*   **Expanded Genetic Code Library:**
+    *   Includes all official genetic codes from NCBI (up to Table 33).
+    *   Features four recently discovered (unofficial) genetic codes for cutting-edge research.
+    *   A reorganized UI with quick access to standard/nuclear codes and logical dropdowns for other categories.
+
 ## Author
 Ruslan Khafizov
-*   Contact: <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>
+*   **Email:** <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>
+*   **YouTube:** <a href="https://www.youtube.com/@ruslankhafizov251">@ruslankhafizov251</a>
+*   **Facebook:** <a href="https://www.facebook.com/russopirato/">Profile</a>
 
 ## License
 MIT License
