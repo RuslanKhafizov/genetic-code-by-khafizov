@@ -9,65 +9,52 @@ This interactive web tool is designed for visualizing, exploring, and analyzing 
 
 ## Core Features
 
-The application is divided into two main interactive panels:
+The application is built around a single, powerful interactive matrix with dedicated control panels for streamlined analysis.
 
-### 1. Rumer Orbit Explorer (Left Panel)
+### 1. The Interactive Genetic Code Matrix
 
-This panel focuses on the group-theoretic properties of the genetic code:
+This is the central workspace of the application.
 
-*   **Codogram Orbit Visualization:**
-    *   It has been established by the program's author that the 24 homogeneous codogram representations of the genetic code are partitioned into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. This tool displays these 6 orbits.
-    *   Users can select any of the 6 orbits for detailed inspection.
-*   **Mini-Matrix Display (Codograms):**
-    *   For the selected orbit, 4 mini-matrices (4x4 codograms) are displayed, corresponding to the application of the E (identity), R1, R2, and R transformations to the orbit's representative nucleotide order.
-    *   Cells (XY-boxes) within each mini-matrix are colored:
-        *   **Black:** Belongs to Octet I (all 4 codons XYN code for the same amino acid in the *currently selected genetic code*).
-        *   **White:** Belongs to Octet II.
-    *   **Molecular Mass Display:** Each of the 16 XY-boxes in a mini-matrix displays the sum of atomic weights of the four amino acids it codes for (using the active genetic code). Stop codons are assigned a conventional weight of 74 Da, and unknown codons ('?') a weight of 0 Da.
-    *   **Row/Column/Grand Total Masses:** Sums of molecular masses are displayed for each row, each column, and the grand total for each mini-matrix.
-*   **Interactive Rumer-related Transformations:**
-    *   Buttons allow users to apply R (U↔G, C↔A), R1 (U↔G), or R2 (C↔A) transformations to the nucleotide orders of the currently displayed orbit.
-    *   This dynamically changes the displayed codograms, allowing observation of how these transformations affect code structure and nucleotide arrangements.
-    *   Nucleotides affected by an active transformation are highlighted on the axes and titles of the mini-matrices.
-*   **Genetic Code Selection for Analysis:**
-    *   Allows selection from a comprehensive list of genetic codes (Standard Code, specific alternative codes, and grouped lists of other nuclear, mitochondrial, and bacterial/plastid codes sourced from NCBI).
-    *   The Octet I/II assignments and molecular masses in the mini-matrices update dynamically based on the selected code.
-*   **Symmetry Analysis Panel:**
-    *   For any selected alternative genetic code, this panel provides an analysis comparing its structure to the Standard Code:
-        *   **Changes in Octet I:** Lists XY-pairs that have left or joined Octet I. Mini-matrix cells visually indicate these changes with colored borders.
-        *   **R-Symmetry Check:** Evaluates whether Rumer's R-symmetry (Octet I ↔ Octet II) is preserved or violated for the octets defined by the *selected alternative code*.
-*   **Information Button:**
-    *   Opens a modal window with detailed scientific background on Rumer's Octets, transformations, codograms, and orbits (available in English and Russian).
+*   **Full 16x4 Codon Display:** The matrix displays all 64 codons, organized into 16 XY-boxes. Each box contains four individual codon cells (XYU, XYC, XYA, XYG).
+*   **Interactive Codon Selection:** Users can click on any of the 64 individual codon cells to select them for analysis in the calculator.
+*   **R-Partner Highlighting:** Hovering the mouse over any XY-box automatically highlights its complementary R-partner (defined by the Rumer transformation `T↔G, C↔A`) with an orange dashed border. This feature works across all visualization modes, revealing a fundamental symmetry of the code.
 
-### 2. Detailed Genetic Code Matrix (Right Panel)
+### 2. Control Panels
 
-This panel provides a detailed, configurable 16x4 matrix representation of the genetic code:
+The matrix is managed by three dedicated panels for a clear and intuitive workflow.
 
-*   **Full Codon Display:** Each of the 16 main cells (XY-boxes) displays information for all 4 corresponding codons (XYU, XYC, XYA, XYG).
-*   **Customizable Axis Orders:**
-    *   Independent selection of nucleotide order for the 1st (vertical), 2nd (horizontal), and 3rd codon positions.
-    *   A toggle allows synchronization of the 1st and 2nd axis orders or independent settings. The order selection for the 1st/2nd axes is based on the 6 Rumer orbits.
-*   **Multiple Coloring Modes:** Users can choose various modes to color the matrix cells or individual codons, revealing different properties:
-    *   **By Rumer Octets:** Reflects Octet I/II assignments based on the genetic code selected in the Rumer Orbit Explorer.
-    *   **By Amino Acids:** Unique background color for each amino acid; Start/Stop codons are specially highlighted.
-    *   **By AA Hydrophobicity:** Colors codons based on the hydrophobicity category of the encoded amino acid.
-    *   **By AA Charge:** Colors codons based on the charge category of the encoded amino acid.
-    *   **By Synonym Count:** Colors codons based on the number of synonymous codons for the encoded amino acid.
-    *   **By H-bond Strength:** Colors XY-boxes based on the H-bond strength of the 1st and 2nd codon positions.
-    *   **By Nucleotide Type:** Colors XY-boxes based on the purine/pyrimidine type of the 1st and 2nd codon positions.
-    *   **By A+U / C+G Content:** Colors codons based on AU-richness or CG-richness.
-    *   **By Pu/Py Code:** Colors codons based on their 3-position Purine/Pyrimidine code.
-    *   **By Amino/Keto Type (1,2):** Colors XY-boxes based on the amino/keto nature of the 1st and 2nd codon positions.
-    *   **By Synthetase Classes (Std. Code):** Colors codons based on the class of aminoacyl-tRNA synthetase associated with the amino acid (determined by the Standard Code).
-*   **Dynamic Data Integration:**
-    *   Amino acid assignments, Octet I/II coloring (in "By Rumer Octets" mode), hydrophobicity, charge, and synonym counts dynamically update to reflect the genetic code selected in the Rumer Orbit Explorer panel.
-*   **Interactive Mass Summation:**
-    *   Users can click on individual codons (the smallest cells within the 16x4 matrix) to select them.
-    *   A running sum of the molecular masses of the selected codons is displayed below the matrix.
-    *   The equation shows each selected amino acid (or STOP) and its mass, culminating in the total sum.
-    *   The total sum is highlighted in green if it is divisible by 37.
-    *   A "Reset Selection" button clears all selected codons.
-*   **Dynamic Legend:** A comprehensive legend explains the current coloring mode and provides additional relevant information (e.g., the genetic code being analyzed).
+*   **Genetic Code Selection (Left Panel):**
+    *   Allows selection from a comprehensive library of genetic codes, including the Standard Code, all official NCBI alternative codes, recent unofficial discoveries, and custom-built artificial codes.
+    *   The selected code globally affects all calculations and visualizations in the application.
+    *   Contains the **Information** button, which opens a detailed modal window with the scientific background of the tool (available in RU/EN).
+
+*   **Matrix Axes Configuration (Middle Panel):**
+    *   **Canonical Order Presets:** One-click buttons to instantly set all matrix axes to the **"Standard (UCAG)"** or the **"SSyGC (AUGC)"** order for quick analysis from different theoretical viewpoints.
+    *   **Orbit-Based Selection:** Allows users to choose an axis order from one of the 6 Rumer orbits, which groups nucleotide permutations by their group-theoretic properties.
+    *   **Manual & Independent Control:** A toggle switch allows for independent control of the 1st (vertical) and 2nd (horizontal) axes. The 3rd position axis can always be set manually.
+    *   **Axis Synchronization:** When selecting a new order via the orbit panel or canonical presets, the 3rd position axis automatically syncs to the same order for consistent analysis.
+
+*   **Visualization Modes (Right Panel):**
+    *   A list of over a dozen coloring modes to visually analyze the code based on various properties. The matrix and legend update instantly. Key modes include:
+        *   **Structural:** By Rumer Octets, By Quartets.
+        *   **Supersymmetry (SSyGC):** By SSyGC Quadrants, By SSyGC Box Type, and By SSyGC Box Class.
+        *   **Biochemical:** By Amino Acids, By Side Chain Mass, By Hydrophobicity, By Charge.
+        *   **Biological:** By Synthetase Subtypes, Custom tRNA Anticodons.
+        *   **Evolutionary:** By Markov Stability.
+
+### 3. Advanced Calculator
+
+The calculator below the matrix provides a real-time, in-depth analysis of the selected codons.
+
+*   **Biochemically Correct Polymer Masses:** Calculates the true mass of polypeptide chains, DNA/RNA strands, and DNA double helices, correctly accounting for water loss during polymerization.
+*   **Dual Mass Display:** Shows both the final polymer mass and the sum of its free components in parentheses for full transparency (e.g., `polymer_mass (sum_of_components)`).
+*   **Atomic & Nucleon Composition:**
+    *   Automatically calculates the total atomic count (C, H, N, O, S) and displays the **gross chemical formula** of the resulting peptide.
+    *   Sums the total number of **protons** and **neutrons** for the selected amino acids, based on data from Shcherbak & Makukov.
+*   **Multi-Divisor Highlighting:**
+    *   Features three input fields for user-defined numbers.
+    *   All numerical results in the calculator (masses, atomic counts, protons, neutrons) are highlighted in green if they are divisible by **any** of the entered numbers, turning the tool into a powerful platform for numerological analysis.
+*   **Correct STOP Codon Logic:** STOP codons are correctly included in the "sum of components" mass but are excluded from polypeptide mass and atomic composition calculations, ensuring scientific accuracy.
 
 ## Scientific Background & Key Concepts
 
