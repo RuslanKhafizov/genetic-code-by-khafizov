@@ -165,7 +165,6 @@ The [v4.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/v4.0.html) 
 *   **Major UI Overhaul & Usability:**
     *   The application has been completely redesigned into a **single-screen experience**, removing the previous dual-panel layout to maximize focus on the interactive matrix.
     *   Controls are now organized into three dedicated columns: **Genetic Code Selection** (left), **Matrix Axes Configuration** (middle), and **Visualization Modes** (right) for a more intuitive workflow.
-    *   **Critical Bug Fix and UI Overhaul:** Fixed a critical bug that caused the application to crash ("white screen") when clicking the "Information" button. The information panel has been completely rewritten into a new, stable modal window featuring a language switcher (RU/EN) and updated, comprehensive text with active hyperlinks to scientific sources.
 
 *   **Advanced Symmetry Visualization Modes:**
     *   **Restored R-Partner Highlighting:** Hovering over any XY-box in the main matrix now highlights its complementary R-partner with an orange dashed border, a feature that works across all visualization modes.
