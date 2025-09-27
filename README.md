@@ -5,6 +5,7 @@ This interactive web tool is designed for visualizing, exploring, and analyzing 
 *   **[v1.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/)**
 *   **[v2.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/beta.html)**
 *   **[v3.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/v3.0.html)**
+*   **[v4.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/v4.0.html)**
 
 ## Core Features
 
