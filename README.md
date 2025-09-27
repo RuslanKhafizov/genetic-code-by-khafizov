@@ -158,6 +158,32 @@ The [v3.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/v3.0.html) 
     *   Features four recently discovered (unofficial) genetic codes for cutting-edge research.
     *   A reorganized UI with quick access to standard/nuclear codes and logical dropdowns for other categories.
 
+## New Features in the v4.0
+
+The [v4.0](https://ruslankhafizov.github.io/genetic-code-by-khafizov/v4.0.html) is a major update focusing on a streamlined user interface, new deep-level analytical modes based on the Supersymmetry Genetic Code (SSyGC), and a significantly enhanced interactive calculator.
+
+*   **Major UI Overhaul & Usability:**
+    *   The application has been completely redesigned into a **single-screen experience**, removing the previous dual-panel layout to maximize focus on the interactive matrix.
+    *   Controls are now organized into three dedicated columns: **Genetic Code Selection** (left), **Matrix Axes Configuration** (middle), and **Visualization Modes** (right) for a more intuitive workflow.
+    *   **Critical Bug Fix and UI Overhaul:** Fixed a critical bug that caused the application to crash ("white screen") when clicking the "Information" button. The information panel has been completely rewritten into a new, stable modal window featuring a language switcher (RU/EN) and updated, comprehensive text with active hyperlinks to scientific sources.
+
+*   **Advanced Symmetry Visualization Modes:**
+    *   **Restored R-Partner Highlighting:** Hovering over any XY-box in the main matrix now highlights its complementary R-partner with an orange dashed border, a feature that works across all visualization modes.
+    *   **New SSyGC Modes:** Three new visualization modes based on the Supersymmetry Genetic Code model have been added:
+        1.  **By SSyGC Quadrants:** Colors the matrix into four major blocks as defined in the SSyGC table.
+        2.  **By SSyGC Box Type:** Differentiates between "Direct" and "Complement" XY-boxes.
+        3.  **By SSyGC Box Class:** A detailed 4-color scheme that classifies boxes by both their Direct/Complement status and their Split/No-Split property.
+    *   **Canonical Order Presets:** A new control panel allows one-click switching of all matrix axes to either the "Standard (UCAG)" or the **"SSyGC (AUGC)"** order, enabling instant analysis from different theoretical perspectives.
+
+*   **Expanded Calculator Capabilities & Data Accuracy:**
+    *   **Proton & Neutron Counting:** The calculator's "Atomic Composition" section now also sums the total number of **protons** and **neutrons** for the selected amino acids, based on the precise data from the Shcherbak-Makukov articles.
+    *   **Multi-Divisor Highlighting:** The divisibility check is now far more powerful. Users can input up to **three different numbers** simultaneously. Any calculated mass divisible by **any** of these numbers will be highlighted in green.
+    *   **Critical Logic Fix:** The calculator's logic has been corrected to ensure **STOP codons** are handled properly. They no longer incorrectly affect the calculation of polypeptide mass or the peptide's chemical formula, making the results biochemically accurate.
+
+*   **Data and Color Scheme Updates:**
+    *   **Corrected Synthetase Data:** The classification for aminoacyl-tRNA synthetases has been updated to align with the latest scientific consensus.
+    *   **New Synthetase Color Scheme:** The visualization for synthetase classes has been improved with an intuitive new palette: shades of **blue for Class I** and shades of **red/orange for Class II**.
+
 ## Author
 Ruslan Khafizov
 *   **Email:** <a href="mailto:jhgf10@gmail.com">jhgf10@gmail.com</a>
