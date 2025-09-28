@@ -56,56 +56,45 @@ The calculator below the matrix provides a real-time, in-depth analysis of the s
     *   All numerical results in the calculator (masses, atomic counts, protons, neutrons) are highlighted in green if they are divisible by **any** of the entered numbers, turning the tool into a powerful platform for numerological analysis.
 *   **Correct STOP Codon Logic:** STOP codons are correctly included in the "sum of components" mass but are excluded from polypeptide mass and atomic composition calculations, ensuring scientific accuracy.
 
-## Scientific Background & Key Concepts
+## Scientific Background and Key Concepts
 
-**1. Rumer's Octets:**
-Y.B. Rumer was the first to note that the 16 "columns" (XY-boxes, defined by the first two nucleotides of a codon) in the standard genetic code table can be divided into two groups of eight columns each – the Octets.
-*   **Octet I:** Includes XY-boxes where all four codons (XYN, where N is any of the four nucleotides) code for the same amino acid (complete 4-fold degeneracy).
-*   **Octet II:** Includes the remaining XY-boxes where such complete degeneracy is not observed.
-In this tool, assignment to Octet I or II is determined dynamically for the standard genetic code based on this principle of 4-fold degeneracy.
+The tool visualizes and allows interaction with the following core ideas:
 
-**2. Rumer's R-Transformation:**
-Y.B. Rumer also discovered that Octets I and II are related by a simple symmetry transformation **R = (T↔G, C↔A)** (in RNA nucleotides: U↔G, C↔A). This transformation mutually converts XY-boxes from Octet I to Octet II and vice versa.
+1.  **Rumer's Octets**
+    *   As first noted by [Y. B. Rumer](https://www.prometeus.nsc.ru/science/schools/rumer/works/1968.ssi), the 16 "columns" (XY-boxes, defined by the first two nucleotides of a codon) in the standard genetic code table can be divided into two groups of eight:
+        *   **Octet I:** XY-boxes where all four codons (XYN) code for the same amino acid (4-fold degeneracy).
+        *   **Octet II:** The remaining XY-boxes without such complete degeneracy.
+    *   This tool dynamically determines the Octet I/II assignment for the standard genetic code.
 
-**3. Codograms and Code Representations:**
-The concept of a **codogram** was introduced by Vladimir I. Shcherbak and Maxim A. Makukov (see <a href="https://arxiv.org/pdf/1707.03382" target="_blank" rel="noopener noreferrer" target="_blank" rel="noopener noreferrer">publication</a>) to visualize the structure of the genetic code. A codogram is a 4x4 square whose cells are colored based on whether the corresponding XY-box belongs to Octet I or Octet II.
-There are 24 possible ways to order the nucleotides (U, C, A, G) on the axes of a codogram if the order on both axes is synchronous ("homogeneous representations").
+2.  **Rumer's R-Transformation**
+    *   Y. B. Rumer also identified a symmetry transformation **R = (T↔G, C↔A)** (or U↔G, C↔A in RNA) that interconverts XY-boxes between Octet I and Octet II.
 
-**4. Simply-Connected Codograms and the {E, R, R1, R2} Transformation Group:**
-Alexander D. Panov (see <a href="http://dec1.sinp.msu.ru/~panov" target="_blank" rel="noopener noreferrer">personal page</a>, <a href="https://www.sociostudies.org/almanac/articles/are_the_strange_information_structures_of_the_genetic_code_an_accident_or_an_artifact" target="_blank" rel="noopener noreferrer">publication</a>) and Felix P. Filatov analyzed all 24 codograms and found that among them, four "simply-connected" codograms stand out. In such codograms, the regions corresponding to Octets I and II are continuous.
-They also showed that these four simply-connected codograms form a closed group under the transformations:
-*   **R** (full Rumer): U↔G, C↔A
-*   **R1** ("purine" Rumer transformation): U↔G (A and C unchanged)
-*   **R2** ("pyrimidine" Rumer transformation): C↔A (U and G unchanged)
-*   **E** (identity transformation)
-These four transformations {E, R, R1, R2} form a mathematical group (the Klein four-group V₄).
+3.  **Codograms and Code Representations**
+    *   The concept of a **codogram** was introduced by [Vladimir Shcherbak and Maxim Makukov](https://arxiv.org/pdf/1707.03382) as a 4x4 visual representation of the genetic code, where cells are colored based on their Octet I/II assignment.
+    *   There are 24 possible "homogeneous representations" when ordering the four nucleotides on the axes of the codogram.
 
-**5. Codogram Orbits:**
-Further analysis by the author of this tool (Ruslan Khafizov) has shown that all 24 homogeneous codograms are partitioned into 6 disjoint "orbits" under the action of the {E, R, R1, R2} transformation group. Each such orbit contains 4 codograms, and this tool demonstrates these orbital structures:
-*   {TCAG, GACT, GCAT, TACG}
-*   {TCGA, GATC, GCTA, TAGC}
-*   {CTAG, AGCT, CGAT, ATCG}
-*   {CTGA, AGTC, CGTA, ATGC}
-*   {TGCA, GTAC, TGAC, GTCA}
-*   {ACGT, CATG, ACTG, CAGT}
+4.  **Simply-Connected Codograms and the {E, R, R1, R2} Transformation Group**
+    *   [Alexander D. Panov and Felix P. Filatov](https://www.sociostudies.org/almanac/articles/are_the_strange_information_structures_of_the_genetic_code_an_accident_or_an_artifact) identified four "simply-connected" codograms where Octet I and II regions are continuous.
+    *   They showed these are closed under the transformations:
+        *   **R** (full Rumer): U↔G, C↔A
+        *   **R1** ("purine" Rumer transformation): U↔G
+        *   **R2** ("pyrimidine" Rumer transformation): C↔A
+        *   **E** (identity)
+    *   These transformations form the Klein four-group (V₄).
+
+5.  **Codogram Orbits**
+    *   Ruslan Khafizov, the developer of this tool, established that all 24 homogeneous codograms are divided by the {E, R, R1, R2} transformation group into **6 disjoint orbits**. Each orbit contains 4 codograms:
+        *   `{TCAG, GACT, GCAT, TACG}`
+        *   `{TCGA, GATC, GCTA, TAGC}`
+        *   `{CTAG, AGCT, CGAT, ATCG}`
+        *   `{CTGA, AGTC, CGTA, ATGC}`
+        *   `{TGCA, GTAC, TGAC, GTCA}`
+        *   `{ACGT, CATG, ACTG, CAGT}`
 
 **Physico-Chemical and Structural Consequences of Rumer-related Transformations:**
 *   **Conservation of Amino/Keto Type of XY-boxes:** All transformations in the {E, R, R1, R2} group preserve the amino-group (A, C) or keto-group (U, G) nature of each nucleotide.
 *   **Purine ↔ Pyrimidine Transformations (Transversions):** The full R-transformation always acts as a transversion for both nucleotides in an XY-box. The "half" transformations R1 and R2 also perform transversions for their target nucleotides.
 *   **Regular Changes in Nucleotide Bonding "Strength":** These transformations lead to predictable changes in nucleotide "strength" (H-bonds: Weak W – A/U; Strong S – G/C).
-
-## How to Run Locally
-1.  Download or clone this repository.
-2.  Ensure the main HTML file is named `index.html`.
-3.  Open the `index.html` file in a modern web browser (e.g., Chrome, Firefox, Edge, Safari).
-
-## Technologies Used
-*   **React 18** (via CDN)
-*   **ReactDOM 18** (via CDN)
-*   **Babel Standalone** (via CDN for in-browser JSX transformation)
-*   **Tailwind CSS** (via CDN for styling)
-*   **TinyColor** (via CDN for color manipulation)
-*   HTML5, CSS3, JavaScript (ES6+)
 
 ## New Features in the v2.0
 
